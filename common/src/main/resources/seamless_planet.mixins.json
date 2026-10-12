@@ -4,7 +4,9 @@
   "package": "com.andrewparry.seamlessplanet.mixin",
   "refmap": "${mod_id}.refmap.json",
   "compatibilityLevel": "JAVA_21",
-  "mixins": [],
+  "mixins": [
+    "RandomStateMixin"
+  ],
   "client": [],
   "server": [],
   "injectors": {

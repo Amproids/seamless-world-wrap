@@ -12,8 +12,15 @@ public class SeamlessPlanet {
     public static final String MOD_NAME = "Seamless Planet";
     public static final Logger LOG = LoggerFactory.getLogger(MOD_NAME);
 
+    // Until there's a world-creation screen, every noise-based world uses the defaults.
+    private static WrapSettings settings = WrapSettings.DEFAULT;
+
+    public static WrapSettings settings() {
+        return settings;
+    }
+
     public static void init() {
-        LOG.info("{} loaded on {}", MOD_NAME, Services.PLATFORM.getPlatformName());
+        LOG.info("{} loaded on {}: {}", MOD_NAME, Services.PLATFORM.getPlatformName(), settings);
     }
 
     public static ResourceLocation id(String path) {
