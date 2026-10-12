@@ -21,9 +21,9 @@ import java.util.stream.IntStream;
 
 /**
  * Renders a top-down map straight from the world generator, without generating chunks.
- * Heights are the generator's preliminary surface (the terrain shape before caves, overhangs
- * and surface blocks), which is what matters for spotting seams and is far cheaper than
- * {@code getBaseHeight}, which builds a whole NoiseChunk per column.
+ * Heights come from sampling the router directly, which is far cheaper than
+ * {@code getBaseHeight} (that builds a whole NoiseChunk per column): the cheap preliminary
+ * surface finds roughly where the ground is, then the final density is scanned near there.
  * The map covers two world-widths centered on the seam at x = 0 (and two heights on a torus),
  * so both seams and the repeat are visible. Seams are marked red; blend band edges yellow.
  */
@@ -47,7 +47,8 @@ public final class SeamMapRenderer {
         RandomState randomState = level.getChunkSource().randomState();
         BiomeSource biomeSource = generator.getBiomeSource();
         int seaLevel = generator.getSeaLevel();
-        DensityFunction surfaceDensity = randomState.router().initialDensityWithoutJaggedness();
+        DensityFunction roughDensity = randomState.router().initialDensityWithoutJaggedness();
+        DensityFunction finalDensity = randomState.router().finalDensity();
         int minY = level.getMinBuildHeight();
         int maxY = level.getMaxBuildHeight();
 
@@ -65,7 +66,7 @@ public final class SeamMapRenderer {
             int z = minZ + py * blocksPerPixel;
             for (int px = 0; px < w; px++) {
                 int x = minX + px * blocksPerPixel;
-                int y = surfaceHeight(surfaceDensity, x, z, minY, maxY);
+                int y = surfaceHeight(roughDensity, finalDensity, x, z, minY, maxY);
                 heights[py * w + px] = y;
                 Holder<Biome> biome = biomeSource.getNoiseBiome(
                         QuartPos.fromBlock(x), QuartPos.fromBlock(Math.max(y, seaLevel)), QuartPos.fromBlock(z), randomState.sampler());
@@ -107,13 +108,23 @@ public final class SeamMapRenderer {
         return new Result(terrainFile, biomeFile, w, h, System.currentTimeMillis() - start);
     }
 
-    /** Top-down scan in 16-block steps, then a 1-block refine inside the step where solid begins. */
-    private static int surfaceHeight(DensityFunction density, int x, int z, int minY, int maxY) {
+    /**
+     * Rough surface from the preliminary density (16-block steps), then the real top solid block:
+     * final density scanned down in 4-block steps from well above the rough surface, since
+     * jaggedness (peaks) and 3D noise can raise the ground above the estimate.
+     */
+    private static int surfaceHeight(DensityFunction rough, DensityFunction exact, int x, int z, int minY, int maxY) {
+        int roughY = minY;
         for (int y = maxY - 1; y >= minY; y -= 16) {
-            if (isSolid(density, x, y, z)) {
-                int top = Math.min(y + 15, maxY - 1);
-                for (int fine = top; fine > y; fine--) {
-                    if (isSolid(density, x, fine, z)) {
+            if (density(rough, x, y, z) > SURFACE_DENSITY) {
+                roughY = y;
+                break;
+            }
+        }
+        for (int y = Math.min(roughY + 80, maxY - 1); y >= minY; y -= 4) {
+            if (density(exact, x, y, z) > 0.0) {
+                for (int fine = Math.min(y + 3, maxY - 1); fine > y; fine--) {
+                    if (density(exact, x, fine, z) > 0.0) {
                         return fine;
                     }
                 }
@@ -123,8 +134,8 @@ public final class SeamMapRenderer {
         return minY;
     }
 
-    private static boolean isSolid(DensityFunction density, int x, int y, int z) {
-        return density.compute(new DensityFunction.SinglePointContext(x, y, z)) > SURFACE_DENSITY;
+    private static double density(DensityFunction function, int x, int y, int z) {
+        return function.compute(new DensityFunction.SinglePointContext(x, y, z));
     }
 
     /** Seams at every multiple of the world width; band starts {@code blend} blocks before each. */
