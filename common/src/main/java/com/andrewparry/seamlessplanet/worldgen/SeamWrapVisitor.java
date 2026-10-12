@@ -4,6 +4,7 @@ import com.andrewparry.seamlessplanet.WrapSettings;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.levelgen.DensityFunction;
+import net.minecraft.world.level.levelgen.DensityFunctions;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -40,10 +41,20 @@ public class SeamWrapVisitor implements DensityFunction.Visitor {
     }
 
     private DensityFunction wrapNew(DensityFunction function) {
-        if (function instanceof SeamBlendedFunction) {
+        // Holder references have no codec (calling it throws); the function they point to is visited separately.
+        if (function instanceof SeamBlendedFunction || function instanceof DensityFunctions.HolderHolder) {
             return function;
         }
-        ResourceLocation type = BuiltInRegistries.DENSITY_FUNCTION_TYPE.getKey(function.codec().codec());
+        ResourceLocation type = typeOf(function);
         return type != null && LEAF_TYPES.contains(type) ? new SeamBlendedFunction(function, settings) : function;
+    }
+
+    /** Registered type id, or null for runtime-only functions (from vanilla or other mods) that have none. */
+    private static ResourceLocation typeOf(DensityFunction function) {
+        try {
+            return BuiltInRegistries.DENSITY_FUNCTION_TYPE.getKey(function.codec().codec());
+        } catch (UnsupportedOperationException e) {
+            return null;
+        }
     }
 }
