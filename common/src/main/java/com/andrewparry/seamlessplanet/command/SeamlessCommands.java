@@ -27,7 +27,7 @@ public final class SeamlessCommands {
         dispatcher.register(Commands.literal("seamlessplanet")
                 .requires(source -> source.hasPermission(2))
                 .then(Commands.literal("map")
-                        .executes(context -> renderMap(context, 2))
+                        .executes(context -> renderMap(context, 4))
                         .then(Commands.argument("blocksPerPixel", IntegerArgumentType.integer(1, 16))
                                 .executes(context -> renderMap(context, IntegerArgumentType.getInteger(context, "blocksPerPixel"))))));
     }
@@ -41,7 +41,9 @@ public final class SeamlessCommands {
         // Sampling the generator is thread-safe (worldgen does it off-thread), so keep the server responsive.
         CompletableFuture.supplyAsync(() -> {
             try {
-                return SeamMapRenderer.render(level, SeamlessPlanet.settings(), blocksPerPixel, outDir);
+                return SeamMapRenderer.render(level, SeamlessPlanet.settings(), blocksPerPixel, outDir,
+                        percent -> source.getServer().execute(() ->
+                                source.sendSuccess(() -> Component.literal("  " + percent + "%"), false)));
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

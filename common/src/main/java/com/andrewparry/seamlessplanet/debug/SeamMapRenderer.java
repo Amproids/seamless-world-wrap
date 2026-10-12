@@ -7,7 +7,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.chunk.ChunkGenerator;
-import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.levelgen.DensityFunction;
 import net.minecraft.world.level.levelgen.RandomState;
 
 import javax.imageio.ImageIO;
@@ -15,10 +15,15 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.IntConsumer;
 import java.util.stream.IntStream;
 
 /**
  * Renders a top-down map straight from the world generator, without generating chunks.
+ * Heights are the generator's preliminary surface (the terrain shape before caves, overhangs
+ * and surface blocks), which is what matters for spotting seams and is far cheaper than
+ * {@code getBaseHeight}, which builds a whole NoiseChunk per column.
  * The map covers two world-widths centered on the seam at x = 0 (and two heights on a torus),
  * so both seams and the repeat are visible. Seams are marked red; blend band edges yellow.
  */
@@ -33,12 +38,18 @@ public final class SeamMapRenderer {
     private SeamMapRenderer() {
     }
 
-    public static Result render(ServerLevel level, WrapSettings settings, int blocksPerPixel, Path outDir) throws IOException {
+    /** Same threshold vanilla uses for the preliminary surface level (NoiseChunk). */
+    private static final double SURFACE_DENSITY = 0.390625;
+
+    public static Result render(ServerLevel level, WrapSettings settings, int blocksPerPixel, Path outDir, IntConsumer progressPercent) throws IOException {
         long start = System.currentTimeMillis();
         ChunkGenerator generator = level.getChunkSource().getGenerator();
         RandomState randomState = level.getChunkSource().randomState();
         BiomeSource biomeSource = generator.getBiomeSource();
         int seaLevel = generator.getSeaLevel();
+        DensityFunction surfaceDensity = randomState.router().initialDensityWithoutJaggedness();
+        int minY = level.getMinBuildHeight();
+        int maxY = level.getMaxBuildHeight();
 
         int minX = -settings.width() / 2;
         int spanX = settings.width() * 2;
@@ -49,15 +60,20 @@ public final class SeamMapRenderer {
 
         int[] heights = new int[w * h];
         int[] biomeColors = new int[w * h];
+        AtomicInteger rowsDone = new AtomicInteger();
         IntStream.range(0, h).parallel().forEach(py -> {
             int z = minZ + py * blocksPerPixel;
             for (int px = 0; px < w; px++) {
                 int x = minX + px * blocksPerPixel;
-                int y = generator.getBaseHeight(x, z, Heightmap.Types.OCEAN_FLOOR_WG, level, randomState);
+                int y = surfaceHeight(surfaceDensity, x, z, minY, maxY);
                 heights[py * w + px] = y;
                 Holder<Biome> biome = biomeSource.getNoiseBiome(
                         QuartPos.fromBlock(x), QuartPos.fromBlock(Math.max(y, seaLevel)), QuartPos.fromBlock(z), randomState.sampler());
                 biomeColors[py * w + px] = colorFor(biome);
+            }
+            int done = rowsDone.incrementAndGet();
+            if (done * 10 / h != (done - 1) * 10 / h) {
+                progressPercent.accept(done * 100 / h);
             }
         });
 
@@ -89,6 +105,26 @@ public final class SeamMapRenderer {
         ImageIO.write(terrain, "png", terrainFile.toFile());
         ImageIO.write(biomes, "png", biomeFile.toFile());
         return new Result(terrainFile, biomeFile, w, h, System.currentTimeMillis() - start);
+    }
+
+    /** Top-down scan in 16-block steps, then a 1-block refine inside the step where solid begins. */
+    private static int surfaceHeight(DensityFunction density, int x, int z, int minY, int maxY) {
+        for (int y = maxY - 1; y >= minY; y -= 16) {
+            if (isSolid(density, x, y, z)) {
+                int top = Math.min(y + 15, maxY - 1);
+                for (int fine = top; fine > y; fine--) {
+                    if (isSolid(density, x, fine, z)) {
+                        return fine;
+                    }
+                }
+                return y;
+            }
+        }
+        return minY;
+    }
+
+    private static boolean isSolid(DensityFunction density, int x, int y, int z) {
+        return density.compute(new DensityFunction.SinglePointContext(x, y, z)) > SURFACE_DENSITY;
     }
 
     /** Seams at every multiple of the world width; band starts {@code blend} blocks before each. */
