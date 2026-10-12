@@ -10,6 +10,22 @@ dependencies {
     }
     modImplementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
+
+    // Dev-only: live maps for checking the seam in game. Not a dependency of the mod.
+    modLocalRuntime "maven.modrinth:xaeros-minimap:${xaeros_minimap_version}"
+    modLocalRuntime "maven.modrinth:xaeros-world-map:${xaeros_world_map_version}"
+}
+
+repositories {
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'Modrinth'
+                url = 'https://api.modrinth.com/maven'
+            }
+        }
+        filter { includeGroup('maven.modrinth') }
+    }
 }
 
 loom {
