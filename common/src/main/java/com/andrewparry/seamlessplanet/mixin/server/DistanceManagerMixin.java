@@ -3,6 +3,7 @@ package com.andrewparry.seamlessplanet.mixin.server;
 import com.andrewparry.seamlessplanet.WrapSettings;
 import com.andrewparry.seamlessplanet.wrap.SeamWrap;
 import com.andrewparry.seamlessplanet.wrap.SeamWrapHolder;
+import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.DistanceManager;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -38,6 +39,20 @@ public abstract class DistanceManagerMixin implements SeamWrapHolder {
                 }
             }
         }
+    }
+
+    /**
+     * The player's section is briefly past the seam while a move is processed (before the player
+     * is moved back), so player tickets are always filed under the canonical section.
+     */
+    @ModifyVariable(method = {"addPlayer", "removePlayer"}, at = @At("HEAD"), argsOnly = true)
+    private SectionPos seamless$canonicalPlayerSection(SectionPos section) {
+        if (seamless$wrap == null) {
+            return section;
+        }
+        int x = seamless$wrap.wrapChunkX(section.x());
+        int z = seamless$wrap.wrapChunkZ(section.z());
+        return x == section.x() && z == section.z() ? section : SectionPos.of(x, section.y(), z);
     }
 
     @ModifyVariable(method = {"addTicket(JLnet/minecraft/server/level/Ticket;)V", "removeTicket(JLnet/minecraft/server/level/Ticket;)V"},

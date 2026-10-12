@@ -5,6 +5,7 @@ import com.andrewparry.seamlessplanet.wrap.SeamPlayer;
 import com.andrewparry.seamlessplanet.wrap.SeamWrap;
 import com.andrewparry.seamlessplanet.wrap.SeamWrapHolder;
 import net.minecraft.server.level.ChunkMap;
+import net.minecraft.server.level.ChunkTrackingView;
 import net.minecraft.server.level.DistanceManager;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -52,12 +53,28 @@ public abstract class ChunkMapMixin {
         if (wrap == null) {
             return;
         }
-        ChunkPos center = seamless$clientChunk(player);
+        long canonical = ChunkPos.asLong(wrap.wrapChunkX(x), wrap.wrapChunkZ(z));
+        cir.setReturnValue(seamless$viewContains(wrap, player.getChunkTrackingView(), x, z)
+                && !player.connection.chunkSender.isPending(canonical));
+    }
+
+    /** Newly generated chunks are offered to every player whose view contains any alias of them. */
+    @Redirect(method = "onChunkReadyToSend",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ChunkTrackingView;contains(Lnet/minecraft/world/level/ChunkPos;)Z"))
+    private boolean seamless$readyChunkInView(ChunkTrackingView view, ChunkPos pos) {
+        WrapSettings wrap = SeamWrap.of(level);
+        return wrap == null ? view.contains(pos) : seamless$viewContains(wrap, view, pos.x, pos.z);
+    }
+
+    /** Whether the view contains the alias of chunk (x, z) nearest its center. */
+    private static boolean seamless$viewContains(WrapSettings wrap, ChunkTrackingView view, int x, int z) {
+        if (!(view instanceof ChunkTrackingView.Positioned positioned)) {
+            return view.contains(x, z);
+        }
+        ChunkPos center = positioned.center();
         int aliasX = x + SeamWrap.shiftX(wrap, x * 16 + 8, center.getMiddleBlockX()) / 16;
         int aliasZ = z + SeamWrap.shiftZ(wrap, z * 16 + 8, center.getMiddleBlockZ()) / 16;
-        long canonical = ChunkPos.asLong(wrap.wrapChunkX(x), wrap.wrapChunkZ(z));
-        cir.setReturnValue(player.getChunkTrackingView().contains(aliasX, aliasZ)
-                && !player.connection.chunkSender.isPending(canonical));
+        return view.contains(aliasX, aliasZ);
     }
 
     @Redirect(method = "updateChunkTracking",
