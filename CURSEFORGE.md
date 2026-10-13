@@ -33,7 +33,7 @@ Existing worlds are never changed. New worlds wrap by default; turn it off on th
 - Install on both the client and the server (in singleplayer, just your game)
 
 ## Server hosting
-Want to play a wrapped world with friends? [BisectHosting](https://url-shortener.curseforge.com/DLSzP) runs Minecraft servers with mods like this one installed for you, and this link gets you 25% off.
+Want to play a wrapped world with friends? [BisectHosting](https://url-shortener.curseforge.com/DLSzP) runs Minecraft servers with mods like this one installed for you, and this link gets you 25% off your first month.
 
 ## Known issues
 This is an early release. Back up worlds you care about.
