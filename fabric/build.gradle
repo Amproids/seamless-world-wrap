@@ -14,6 +14,9 @@ dependencies {
     // Dev-only: live maps for checking the seam in game. Not a dependency of the mod.
     modLocalRuntime "maven.modrinth:xaeros-minimap:${xaeros_minimap_version}"
     modLocalRuntime "maven.modrinth:xaeros-world-map:${xaeros_world_map_version}"
+    // Dev-only: Fabric has no built-in mod list; Mod Menu shows ours (and its icon).
+    modLocalRuntime "maven.modrinth:modmenu:${modmenu_version}"
+    modLocalRuntime "maven.modrinth:placeholder-api:${placeholder_api_version}"
 }
 
 repositories {
