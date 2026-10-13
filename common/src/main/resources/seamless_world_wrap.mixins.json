@@ -6,6 +6,7 @@
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "RandomStateMixin",
+    "server.BulkSectionAccessMixin",
     "server.ChunkMapMixin",
     "server.ChunkTrackerMixin",
     "server.DistanceManagerMixin",

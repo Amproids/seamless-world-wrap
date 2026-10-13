@@ -5,7 +5,9 @@ import com.andrewparry.seamlessworldwrap.WrapSettings;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -27,6 +29,15 @@ public final class SeamWrap {
     @Nullable
     public static WrapSettings of(@Nullable Level level) {
         return level instanceof ServerLevel ? WorldWrapState.forDimension(level.dimension()) : null;
+    }
+
+    /** Also accepts a world-generation region, which belongs to a server level. */
+    @Nullable
+    public static WrapSettings of(@Nullable LevelAccessor level) {
+        if (level instanceof Level l) {
+            return of(l);
+        }
+        return level instanceof WorldGenRegion region ? of(region.getLevel()) : null;
     }
 
     public static BlockPos canonical(WrapSettings wrap, BlockPos pos) {
