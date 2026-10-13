@@ -130,6 +130,17 @@ Java 21. The build runs on JDK 21 (`gradle/gradle-daemon-jvm.properties`); Gradl
 - **Compatibility with popular mods**, especially **Distant Horizons** (its far-away terrain should
   show the wrapped world, not unrelated terrain past the edge).
 
+## Goal for 0.2: beatable at any size
+
+The headline: "beat Minecraft in one chunk".
+- **Land at spawn:** at world creation, use vanilla's spawn finder on the unwrapped noise to pick a
+  land spot, and center the world's terrain on it (offset all noise sampling).
+- **Guaranteed stronghold** (Overworld) and **fortress** (Nether) when the world is too small to
+  contain them naturally (strongholds start ~1,280 blocks out; fortresses ~1 per 27 x 27 chunks).
+- **Tiny worlds** (smaller than the structures): place the essentials instead of full structures:
+  an End portal room with frames, a blaze spawner.
+- **The End:** to be looked at (main island and dragon are at 0,0, the world's center).
+
 ## Next steps (candidates)
 
 1. Wrap-aware entity queries (hit detection, collisions, AI across seams).
