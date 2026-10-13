@@ -42,3 +42,21 @@ neoForge {
 }
 
 sourceSets.main.resources { srcDir 'src/generated/resources' }
+
+repositories {
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'Modrinth'
+                url = 'https://api.modrinth.com/maven'
+            }
+        }
+        filter { includeGroup('maven.modrinth') }
+    }
+}
+
+dependencies {
+    // Dev-only: live maps for checking the seam in game. Not a dependency of the mod.
+    runtimeOnly "maven.modrinth:xaeros-minimap:${xaeros_minimap_neoforge_version}"
+    runtimeOnly "maven.modrinth:xaeros-world-map:${xaeros_world_map_neoforge_version}"
+}
