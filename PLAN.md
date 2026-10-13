@@ -107,6 +107,13 @@ Java 21. The build runs on JDK 21 (`gradle/gradle-daemon-jvm.properties`); Gradl
       the landing spot are preloaded (SeamTrackingView on the server, a far-chunk store on the client).
       Client coordinates are canonical. Entities stay on the copy nearest the player (hitboxes), and
       server reach is measured across seams. Tested: smooth in a 1-chunk world.
+- [x] Seamless at any size (2026-10-13): render sections move with the camera on a seam jump
+      (no mesh rebuild), particles/block entities/clouds follow, block texture variation uses
+      canonical positions. Ridden vehicles move with the player's teleport.
+- [x] Structures across seams (villages): references, placement, generation reads/writes,
+      block entities and terrain adaptation all work across edges.
+- [x] Small worlds are beatable: Start in a Forest, End portal room, blaze spawner room, and a
+      dragon fight scaled to small Ends (four short pillars, scaled waypoints).
 - [x] Entity copies: the client draws every entity (and you) at each alias in render distance.
       Visual only; needs the mod on the client. You can shoot yourself in the back with an arrow.
 - [x] Per-world settings, saved in `<world>/seamless_world_wrap.json` when the world is created:

@@ -154,18 +154,7 @@ public abstract class ChunkMapMixin {
         if (newView instanceof SeamTrackingView && center != null && !center.equals(SeamTrackingView.centerOf(oldView))) {
             player.connection.send(new ClientboundSetChunkCacheCenterPacket(center.x, center.z));
         }
-        int[] counts = new int[2];
-        SeamTrackingView.difference(oldView, newView, pos -> {
-            counts[0]++;
-            send.accept(pos);
-        }, pos -> {
-            counts[1]++;
-            drop.accept(pos);
-        });
-        if (newView instanceof SeamTrackingView seam && (counts[0] > 0 || counts[1] > 0) && (seam.regions().size() > 1 || counts[1] > 50)) {
-            SeamlessWorldWrap.LOG.info("[preload debug] {} view centers {}: +{} chunks, -{} chunks",
-                    player.getGameProfile().getName(), seam.regions(), counts[0], counts[1]);
-        }
+        SeamTrackingView.difference(oldView, newView, send, drop);
     }
 
     @Redirect(method = "updateChunkTracking",

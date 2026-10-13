@@ -2,11 +2,14 @@
 
 ## Testing (Claude runs the game, Andrew plays)
 - [x] **NeoForge launches** and a wrapped world loads (World Wrap tab, crossing an edge, portal room)
-- [ ] **Big world** (64 x 64 chunks): cross an edge; no missing chunks or reloading where you land
+- [x] **Big world** (64 x 64 and 2048 x 2048): crossing is seamless (preloaded chunks, reused meshes, no blip)
 - [ ] **Multiplayer**: local server, two players see each other across an edge; settings reach the client
 - [ ] **Unmodded client** joins the wrapped server and can walk across an edge (no copies/smooth crossing expected)
 - [ ] **Existing world** from before the mod: loads and does NOT wrap
 - [ ] **Normal world** (both Overworld switches off): plays like vanilla
+
+- [x] **Fabric** re-checked after the NeoForge fixes (fresh 16 x 16 world, crossings, portal room)
+- [ ] **Village across an edge** generates whole (fix in, not yet seen in game)
 
 ## Build (Claude)
 - [ ] Version set to `0.1.0-alpha`
@@ -34,5 +37,5 @@
 - Mobs don't chase or pathfind across an edge yet
 - Light doesn't carry across an edge
 - An axis that doesn't wrap is endless (no wall at the edge yet)
-- Minecarts can flicker for one frame at an edge while you ride them
-- Copies of players and mobs need the mod on the client
+- Copies of players and mobs, and the seamless crossing, need the mod on the client
+- With Sodium (or another renderer replacement), crossing an edge rebuilds nearby chunk meshes (a brief flicker)

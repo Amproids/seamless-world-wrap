@@ -132,10 +132,6 @@ public abstract class ClientChunkCacheMixin {
                     }
                 }
             }
-            if (promoted > 0 || demoted > 0 || blocked > 0) {
-                SeamlessWorldWrap.LOG.info("[preload debug] center {},{}: promoted {} far chunks, demoted {}, blocked {}; far store {}, received {} far chunks so far",
-                        centerX, centerZ, promoted, demoted, blocked, seamless$far.size(), seamless$farReceived);
-            }
         }
     }
 }
