@@ -3,13 +3,13 @@ package com.andrewparry.seamlessworldwrap.mixin.client;
 import com.andrewparry.seamlessworldwrap.WrapSettings;
 import com.andrewparry.seamlessworldwrap.client.ClientEntityShift;
 import com.andrewparry.seamlessworldwrap.network.ClientWrapState;
-import com.mojang.blaze3d.vertex.VertexBuffer;
-import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.ViewArea;
 import net.minecraft.client.renderer.chunk.SectionRenderDispatcher;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -17,14 +17,13 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.util.HashMap;
-import java.util.Map;
-
 /**
- * After a seam teleport the camera jumps by exactly one world size, and vanilla would throw away
- * every built chunk mesh and rebuild them all. But the blocks one world size over are the same
- * blocks, so each section's existing mesh is handed to the section that now sits one world size
- * away, and nothing needs rebuilding. (GPU buffers move between sections; none are copied or lost.)
+ * After a seam teleport the camera jumps by exactly one world size, and vanilla would give every
+ * render section a new position and rebuild its mesh. The blocks one world size over are the same
+ * blocks, so instead every section object moves by that same world size, keeping its mesh, and
+ * goes into the slot for its new position. Everything that refers to sections (including the
+ * visible-section list, which is recomputed in the background a frame or two later) stays valid,
+ * because the whole picture moved together with the camera.
  */
 @Mixin(ViewArea.class)
 public abstract class ViewAreaMixin {
@@ -33,8 +32,17 @@ public abstract class ViewAreaMixin {
     public SectionRenderDispatcher.RenderSection[] sections;
 
     @Shadow
-    @org.spongepowered.asm.mixin.Final
+    @Final
     protected Level level;
+
+    @Shadow
+    protected int sectionGridSizeX;
+
+    @Shadow
+    protected int sectionGridSizeY;
+
+    @Shadow
+    protected int sectionGridSizeZ;
 
     @Unique
     private double seamless$lastCamX = Double.NaN;
@@ -42,22 +50,8 @@ public abstract class ViewAreaMixin {
     @Unique
     private double seamless$lastCamZ = Double.NaN;
 
-    @Unique
-    private record Saved(SectionRenderDispatcher.CompiledSection compiled, Map<RenderType, VertexBuffer> buffers, boolean dirty) {
-    }
-
-    @Unique
-    private Long2ObjectOpenHashMap<Saved> seamless$saved;
-
-    @Unique
-    private long seamless$shiftX;
-
-    @Unique
-    private long seamless$shiftZ;
-
     @Inject(method = "repositionCamera", at = @At("HEAD"))
-    private void seamless$saveMeshes(double camX, double camZ, CallbackInfo ci) {
-        seamless$saved = null;
+    private void seamless$moveSectionsWithSeamJump(double camX, double camZ, CallbackInfo ci) {
         double lastX = seamless$lastCamX;
         double lastZ = seamless$lastCamZ;
         seamless$lastCamX = camX;
@@ -66,39 +60,43 @@ public abstract class ViewAreaMixin {
         if (wrap == null || Double.isNaN(lastX)) {
             return;
         }
-        // How far the old picture is from the new one: whole world sizes only, else it's not a seam jump.
-        double sx = wrap.wrapsX() ? ClientEntityShift.seamShift(lastX - camX, wrap.width(), 0.5) : 0.0;
-        double sz = wrap.wrapsZ() ? ClientEntityShift.seamShift(lastZ - camZ, wrap.height(), 0.5) : 0.0;
-        if (sx == 0.0 && sz == 0.0) {
+        // The camera moved by whole world sizes (plus a normal step): that's a seam jump.
+        int dx = (int) (wrap.wrapsX() ? ClientEntityShift.seamShift(camX - lastX, wrap.width(), 16.0) : 0.0);
+        int dz = (int) (wrap.wrapsZ() ? ClientEntityShift.seamShift(camZ - lastZ, wrap.height(), 16.0) : 0.0);
+        if (dx == 0 && dz == 0) {
             return;
         }
-        seamless$shiftX = (long) sx;
-        seamless$shiftZ = (long) sz;
-        seamless$saved = new Long2ObjectOpenHashMap<>(sections.length);
-        for (SectionRenderDispatcher.RenderSection section : sections) {
-            RenderSectionAccessor access = (RenderSectionAccessor) section;
-            seamless$saved.put(section.getOrigin().asLong(),
-                    new Saved(section.getCompiled(), new HashMap<>(access.seamless$buffers()), access.seamless$dirty()));
-        }
-    }
-
-    @Inject(method = "repositionCamera", at = @At("TAIL"))
-    private void seamless$restoreMeshes(double camX, double camZ, CallbackInfo ci) {
-        Long2ObjectOpenHashMap<Saved> saved = seamless$saved;
-        seamless$saved = null;
-        if (saved == null) {
-            return;
-        }
+        SectionRenderDispatcher.RenderSection[] moved = new SectionRenderDispatcher.RenderSection[sections.length];
+        int minY = level.getMinBuildHeight();
         for (SectionRenderDispatcher.RenderSection section : sections) {
             BlockPos origin = section.getOrigin();
-            Saved old = saved.get(BlockPos.asLong(origin.getX() + (int) seamless$shiftX, origin.getY(), origin.getZ() + (int) seamless$shiftZ));
-            if (old == null) {
-                continue;
+            int x = origin.getX() + dx;
+            int y = origin.getY();
+            int z = origin.getZ() + dz;
+            int slot = (Math.floorMod(z >> 4, sectionGridSizeZ) * sectionGridSizeY + ((y - minY) >> 4)) * sectionGridSizeX
+                    + Math.floorMod(x >> 4, sectionGridSizeX);
+            if (slot < 0 || slot >= moved.length || moved[slot] != null) {
+                return; // unexpected layout: let vanilla reposition (and rebuild) as usual
             }
-            RenderSectionAccessor access = (RenderSectionAccessor) section;
-            access.seamless$buffers().putAll(old.buffers());
-            section.compiled.set(old.compiled());
-            access.seamless$setDirty(old.dirty());
+            moved[slot] = section;
+        }
+        for (SectionRenderDispatcher.RenderSection section : moved) {
+            seamless$move(section, dx, dz);
+        }
+        sections = moved;
+    }
+
+    /** Like setOrigin, but keeps the built mesh (the blocks there are the same). */
+    @Unique
+    private static void seamless$move(SectionRenderDispatcher.RenderSection section, int dx, int dz) {
+        RenderSectionAccessor access = (RenderSectionAccessor) section;
+        BlockPos.MutableBlockPos origin = access.seamless$origin();
+        origin.set(origin.getX() + dx, origin.getY(), origin.getZ() + dz);
+        access.seamless$setBoundingBox(new AABB(origin.getX(), origin.getY(), origin.getZ(),
+                origin.getX() + 16, origin.getY() + 16, origin.getZ() + 16));
+        BlockPos.MutableBlockPos[] relative = access.seamless$relativeOrigins();
+        for (Direction direction : Direction.values()) {
+            relative[direction.ordinal()].set(origin).move(direction, 16);
         }
     }
 }
