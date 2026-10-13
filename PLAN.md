@@ -92,14 +92,35 @@ Java 21. The build runs on JDK 21 (`gradle/gradle-daemon-jvm.properties`); Gradl
 
 - [x] Name: **Seamless Planet** (mod ID `seamless_planet`, package `com.andrewparry.seamlessplanet`). License: MIT (changeable).
 - [x] Multi-loader project (1.21.1). `./gradlew build` produces `fabric/build/libs/seamless_planet-fabric-1.21.1-<version>.jar` and `neoforge/build/libs/seamless_planet-neoforge-1.21.1-<version>.jar`.
-- [x] `WorldShape` / `WrapSettings`: shape, size, and coordinate-wrapping math.
+- [x] Seamless worldgen: density-function noise leaves blended at the seams (`worldgen/`).
+- [x] `/seamlessplanet map [blocksPerPixel]`: terrain + biome PNGs straight from the generator.
+- [x] Real loop (`wrap/`, `mixin/server`, `mixin/packet`): the server keeps one canonical world;
+      chunks, tickets, block writes, block entities and ticks are canonical. Players carry an
+      offset (client = canonical + offset) and are moved back into range after crossing, without
+      the client noticing. Outgoing packets are shifted to the alias nearest each player (block and
+      light packets to every alias in view); incoming positions are shifted back. Works with an
+      unmodded client for the world itself.
+- [x] Small worlds: chunks are sent to every alias in view (tested with a 4 x 4 chunk torus;
+      tag `experiment-4x4-torus`, preset `presets/tiny-torus-4x4.properties`).
+- [x] Entity copies: the client draws every entity (and you) at each alias in render distance.
+      Visual only; needs the mod on the client. You can shoot yourself in the back with an arrow.
+- [x] Config: `config/seamless_planet.properties` (shape, size, blend). Global, not per world yet.
 
-## Next steps (milestones)
+## Known issues
 
-1. **Seamless worldgen:** blend density-function noise at the seams. Testable on its own: generate a
-   world, then fly to x = 0 / x = width and check that the terrain on both sides matches.
-2. **Wrapped chunk storage:** chunks past an edge alias the real chunk, so the world repeats forever.
-3. **Invisible teleport:** move players and entities back into the real range when they cross.
-4. **Everything across the seam:** lighting, fluids, redstone, entities rendered from the other side.
-5. **World-creation screen:** shape and size options.
-6. **Publish:** Modrinth + CurseForge page, icon, screenshots.
+- Hit detection, collisions and mob AI don't look across a seam within a single tick (an arrow
+  crossing the seam exactly where you stand passes through).
+- Light doesn't propagate across seams.
+- Boats/minecarts crossing a seam will likely be rejected ("moved wrongly").
+- Cylinder north/south edges are not hard borders yet.
+- Server falls behind (2-4 s) at times, even in a 16-chunk world: needs profiling.
+- Client F3 coordinates are unwrapped (by design); no real-position display yet.
+- World size is global config, not stored per world; multiplayer clients don't receive it.
+
+## Next steps (candidates)
+
+1. Wrap-aware entity queries (hit detection, collisions, AI across seams).
+2. Profile the server lag.
+3. Hard borders for the cylinder; light across seams; vehicles.
+4. Per-world settings + world-creation screen; sync settings to clients.
+5. Publish: Modrinth + CurseForge page, icon, screenshots.
