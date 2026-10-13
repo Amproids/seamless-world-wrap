@@ -11,9 +11,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Fits the dragon fight into Ends smaller than it: the obsidian pillars (normally a ring of
- * radius 42) and the dragon's flight waypoints (rings of 60, 40 and 20) are scaled down so they
- * sit inside the world.
+ * Fits the dragon fight into Ends smaller than it: instead of vanilla's ten tall pillars on a ring
+ * of radius 42, four short ones on a ring that fits; the dragon's flight waypoints (rings of 60, 40
+ * and 20) are scaled down so they sit inside the world.
  */
 public final class SmallEnd {
 
@@ -42,7 +42,13 @@ public final class SmallEnd {
         return half;
     }
 
-    /** Pillars on a smaller ring, thinner, with centers moved into the world (null: vanilla's are fine). */
+    /** Small Ends get just four pillars, shorter than vanilla's (which reach y 76 to 103). */
+    private static final int[] SMALL_HEIGHTS = {70, 74, 78, 82};
+
+    /**
+     * Four short pillars on a ring that fits inside the world, the tallest one caged like vanilla's
+     * (null: the End is big enough for vanilla's ten).
+     */
     @Nullable
     public static List<SpikeFeature.EndSpike> fitPillars(LevelAccessor level, List<SpikeFeature.EndSpike> vanilla) {
         Integer half = half(level);
@@ -51,13 +57,14 @@ public final class SmallEnd {
         }
         WrapSettings wrap = SeamWrap.of(level);
         double ring = Math.max(3, half - 2);
-        double scale = ring / 42.0;
+        int radius = Math.max(1, Math.min(3, (int) Math.round(ring / 10.0)));
         List<SpikeFeature.EndSpike> out = new ArrayList<>();
-        for (SpikeFeature.EndSpike spike : vanilla) {
-            int x = (int) Math.floor(spike.getCenterX() * scale);
-            int z = (int) Math.floor(spike.getCenterZ() * scale);
-            int radius = Math.max(1, Math.min(spike.getRadius(), (int) Math.round(spike.getRadius() * scale)));
-            out.add(new SpikeFeature.EndSpike(wrap.wrapX(x), wrap.wrapZ(z), radius, spike.getHeight(), spike.isGuarded()));
+        for (int i = 0; i < SMALL_HEIGHTS.length; i++) {
+            double angle = Math.PI / 4 + i * Math.PI / 2;
+            int x = (int) Math.floor(ring * Math.cos(angle));
+            int z = (int) Math.floor(ring * Math.sin(angle));
+            boolean caged = i == SMALL_HEIGHTS.length - 1;
+            out.add(new SpikeFeature.EndSpike(wrap.wrapX(x), wrap.wrapZ(z), radius, SMALL_HEIGHTS[i], caged));
         }
         return out;
     }
