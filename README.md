@@ -38,6 +38,17 @@ crossing moves you by exactly one world size without reloading what's on screen.
 works on Minecraft's density functions, so world generation mods built on them should blend at the
 edges too.
 
+## In action
+![Minecarts looping through the edge of a small world](art/gifs/looping_rails.gif)
+
+Shooting an arrow across the edge of a small world:
+
+![Shooting an arrow across the edge](art/gifs/arrow_shot.gif)
+
+...and getting hit by it from behind:
+
+![Getting hit by your own arrow](art/gifs/arrow_hit.gif)
+
 ## Screenshots
 | | |
 |---|---|

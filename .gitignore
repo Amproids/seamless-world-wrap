@@ -25,3 +25,6 @@ runs
 
 # Release jars (built from source)
 release/
+
+# Full-size screen recordings (too big for GitHub); smaller copies are in art/gifs/
+art/screenshots/*.GIF
