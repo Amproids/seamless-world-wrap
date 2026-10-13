@@ -23,7 +23,9 @@ Seamless World Wrap gives a world a fixed size and connects its opposite edges. 
 There is only one copy of the world. Anything past an edge maps back into it, so both sides of an edge are the same blocks. Chunks near your landing point are sent before you reach the edge, and crossing moves you by exactly one world size without reloading what's on screen. Terrain blending uses Minecraft's own terrain system, so world generation mods built on it should blend at the edges too.
 
 ## Setup
-Choose the settings on the World Wrap tab when creating a world. Settings are saved with each world. Worlds created before the mod was installed don't wrap.
+Choose the settings on the World Wrap tab when creating a world. Settings are saved with each world.
+
+Existing worlds are never changed. New worlds wrap by default; turn it off on the World Wrap tab. A wrapped world needs the mod to keep looping.
 
 ## Requirements
 - Minecraft 1.21.1

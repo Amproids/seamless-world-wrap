@@ -9,8 +9,8 @@ First release.
   flickers when you cross.
 - Build across the edge; blocks, chests, redstone, minecarts, mobs and arrows all work across it.
 - The terrain blends across the edges, so the world looks like it was always one piece.
-- World Wrap tab on the Create World screen. Settings are saved per world; worlds made before
-  the mod was installed never wrap.
+- World Wrap tab on the Create World screen. Settings are saved per world.
+- Existing worlds are never changed. New worlds wrap by default; turn it off on the World Wrap tab. A wrapped world needs the mod to keep looping.
 - The Nether wraps at 1/8 scale so portals line up; the End has its own settings (same as the
   Overworld by default).
 - Start in a Forest: the world is centered on forested dry land.
