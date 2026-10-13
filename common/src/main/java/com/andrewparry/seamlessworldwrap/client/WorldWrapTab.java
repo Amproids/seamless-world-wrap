@@ -21,7 +21,7 @@ public class WorldWrapTab extends GridLayoutTab {
 
     private static final int WIDGET_WIDTH = 150;
     /** World sizes offered, in chunks. */
-    private static final int[] SIZES = {4, 8, 16, 32, 48, 64, 96, 128, 192, 256, 384, 512, 1024, 2048};
+    private static final int[] SIZES = {1, 2, 4, 8, 16, 32, 48, 64, 96, 128, 192, 256, 384, 512, 1024, 2048};
 
     private final List<AbstractWidget> endCustomWidgets = new ArrayList<>();
 
@@ -86,7 +86,7 @@ public class WorldWrapTab extends GridLayoutTab {
         }
     }
 
-    /** A slider that snaps to the offered world sizes and shows them in blocks. */
+    /** A slider that snaps to the offered world sizes, in chunks. */
     private static final class SizeSlider extends AbstractSliderButton {
         private final String key;
         private final IntConsumer onChange;
@@ -113,7 +113,7 @@ public class WorldWrapTab extends GridLayoutTab {
 
         @Override
         protected void updateMessage() {
-            setMessage(Component.translatable(key, String.format("%,d", chunks() * 16)));
+            setMessage(Component.translatable(key, String.format("%,d", chunks())));
         }
 
         @Override

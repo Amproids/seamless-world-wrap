@@ -4,11 +4,11 @@
   "seamless_world_wrap.end": "The End",
   "seamless_world_wrap.east_west": "Wrap East-West",
   "seamless_world_wrap.north_south": "Wrap North-South",
-  "seamless_world_wrap.width": "Width: %s blocks",
-  "seamless_world_wrap.length": "Length: %s blocks",
+  "seamless_world_wrap.width": "Width: %s chunks",
+  "seamless_world_wrap.length": "Length: %s chunks",
   "seamless_world_wrap.end_mode": "The End",
   "seamless_world_wrap.end_mode.same": "Same as Overworld",
   "seamless_world_wrap.end_mode.custom": "Custom",
   "seamless_world_wrap.end_mode.off": "Don't wrap",
-  "seamless_world_wrap.note": "Turn both Overworld switches off for a normal world. The Nether wraps at 1/8 of the Overworld size, so portals line up. The world is centered on 0, 0."
+  "seamless_world_wrap.note": "Turn both Overworld switches off for a normal world. The Nether wraps at 1/8 of the Overworld size, so portals line up. A chunk is 16 blocks. The world is centered on 0, 0."
 }

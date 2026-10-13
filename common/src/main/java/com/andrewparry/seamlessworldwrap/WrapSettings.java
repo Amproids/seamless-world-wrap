@@ -9,7 +9,7 @@ package com.andrewparry.seamlessworldwrap;
  */
 public record WrapSettings(boolean wrapsX, boolean wrapsZ, int widthChunks, int heightChunks, int blendWidth) {
 
-    public static final int MIN_CHUNKS = 4;
+    public static final int MIN_CHUNKS = 1;
 
     public WrapSettings {
         if (!wrapsX && !wrapsZ) {

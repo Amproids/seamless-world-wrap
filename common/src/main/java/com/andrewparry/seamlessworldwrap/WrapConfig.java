@@ -81,7 +81,7 @@ public final class WrapConfig {
                         # <world>/seamless_world_wrap.json when it's created; editing this file never
                         # changes existing worlds. Worlds made before the mod was installed don't wrap.
                         #
-                        # Sizes are in chunks (16 blocks), at least 4. The world is centered on 0,0.
+                        # Sizes are in chunks (16 blocks), at least 1. The world is centered on 0,0.
                         # The Nether always wraps at 1/8 of the Overworld size so portals line up.
                         wrapEastWest=true
                         wrapNorthSouth=true
