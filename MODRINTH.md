@@ -49,5 +49,5 @@ The Nether wraps at 1/8 scale, so portal coordinates still line up. Settings are
 - Categories: worldgen, adventure
 - License: MIT
 - Icon: `art/icon-512.png`
-- Gallery: `art/screenshots/` (tiny planet village, hall of mirrors portals, Nether copies of you, minecart loop)
+- Gallery: `art/screenshots/` (tiny world village, hall of mirrors portals, Nether copies of you, minecart loop)
 - Changelog: see CHANGELOG.md
