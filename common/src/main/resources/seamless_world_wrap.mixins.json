@@ -50,7 +50,8 @@
     "packet.ServerboundMoveVehiclePacketAccessor",
     "packet.ServerboundPlayerActionPacketAccessor",
     "packet.ServerboundSignUpdatePacketAccessor",
-    "packet.ServerboundUseItemOnPacketAccessor"
+    "packet.ServerboundUseItemOnPacketAccessor",
+    "client.BlockStateVariationMixin"
   ],
   "client": [
     "client.AbstractMinecartLerpAccessor",

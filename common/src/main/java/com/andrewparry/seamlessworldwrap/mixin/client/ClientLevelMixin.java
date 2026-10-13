@@ -26,6 +26,7 @@ public abstract class ClientLevelMixin {
     private void seamless$keepEntitiesNear(CallbackInfo ci) {
         ClientLevel level = (ClientLevel) (Object) this;
         WrapSettings wrap = ClientWrapState.forDimension(level.dimension());
+        ClientWrapState.setCurrent(wrap);
         Player player = Minecraft.getInstance().player;
         if (wrap == null || player == null) {
             return;

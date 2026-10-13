@@ -12,6 +12,9 @@ import java.util.Map;
 public final class ClientWrapState {
 
     private static volatile Map<ResourceLocation, WrapSettings> dimensions = Map.of();
+    /** Wrap of the dimension the client is in right now (null if none); kept up to date each client tick. */
+    @Nullable
+    private static volatile WrapSettings current;
 
     private ClientWrapState() {
     }
@@ -27,5 +30,15 @@ public final class ClientWrapState {
 
     public static void clear() {
         dimensions = Map.of();
+        current = null;
+    }
+
+    @Nullable
+    public static WrapSettings current() {
+        return current;
+    }
+
+    public static void setCurrent(@Nullable WrapSettings wrap) {
+        current = wrap;
     }
 }
