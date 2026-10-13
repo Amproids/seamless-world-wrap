@@ -8,4 +8,6 @@ public interface IPlatformHelper {
     boolean isModLoaded(String modId);
 
     boolean isDevelopmentEnvironment();
+
+    java.nio.file.Path getConfigDir();
 }

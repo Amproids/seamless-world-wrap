@@ -32,6 +32,11 @@ public abstract class ClientboundBlockEventPacketMixin implements SeamShiftable,
     }
 
     @Override
+    public boolean seamless$allAliases() {
+        return true;
+    }
+
+    @Override
     public Object seamless$copy() {
         try {
             return clone();

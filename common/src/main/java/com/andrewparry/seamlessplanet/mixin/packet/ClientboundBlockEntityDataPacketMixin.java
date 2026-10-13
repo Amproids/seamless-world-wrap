@@ -32,6 +32,11 @@ public abstract class ClientboundBlockEntityDataPacketMixin implements SeamShift
     }
 
     @Override
+    public boolean seamless$allAliases() {
+        return true;
+    }
+
+    @Override
     public Object seamless$copy() {
         try {
             return clone();

@@ -12,7 +12,8 @@ public class SeamlessPlanet {
     public static final String MOD_NAME = "Seamless Planet";
     public static final Logger LOG = LoggerFactory.getLogger(MOD_NAME);
 
-    // Until there's a world-creation screen, every noise-based world uses the defaults.
+    // Until there's a world-creation screen, every world uses config/seamless_planet.properties.
+    // Changing it for an existing world moves its seams, so it's for experimenting only.
     private static WrapSettings settings = WrapSettings.DEFAULT;
 
     public static WrapSettings settings() {
@@ -20,6 +21,7 @@ public class SeamlessPlanet {
     }
 
     public static void init() {
+        settings = WrapConfig.load(Services.PLATFORM.getConfigDir().resolve(MOD_ID + ".properties"));
         LOG.info("{} loaded on {}: {}", MOD_NAME, Services.PLATFORM.getPlatformName(), settings);
     }
 

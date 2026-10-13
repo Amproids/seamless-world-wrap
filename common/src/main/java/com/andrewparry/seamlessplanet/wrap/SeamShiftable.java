@@ -18,6 +18,15 @@ public interface SeamShiftable {
 
     Object seamless$copy();
 
+    /**
+     * True for block and light packets, which go to every alias in the player's view (in a world
+     * narrower than the view, the same block is on screen several times). Everything else, such as
+     * entities and sounds, goes only to the nearest alias.
+     */
+    default boolean seamless$allAliases() {
+        return false;
+    }
+
     default Packet<?> seamless$shifted(SeamPacketTranslator.Frame frame) {
         int dx = frame.shiftX(seamless$refX());
         int dz = frame.shiftZ(seamless$refZ());

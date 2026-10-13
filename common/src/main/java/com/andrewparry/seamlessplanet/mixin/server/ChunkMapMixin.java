@@ -5,7 +5,10 @@ import com.andrewparry.seamlessplanet.wrap.SeamPlayer;
 import com.andrewparry.seamlessplanet.wrap.SeamWrap;
 import com.andrewparry.seamlessplanet.wrap.SeamWrapHolder;
 import net.minecraft.server.level.ChunkMap;
-import net.minecraft.server.level.ChunkTrackingView;
+import net.minecraft.server.level.PlayerMap;
+import net.minecraft.world.level.chunk.LevelChunk;
+import com.andrewparry.seamlessplanet.wrap.SeamAliases;
+import com.andrewparry.seamlessplanet.wrap.SeamChunkSender;
 import net.minecraft.server.level.DistanceManager;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -23,7 +26,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 /**
  * Chunk holders exist only at canonical positions; lookups of aliases resolve to them. Each
  * player's chunk tracking view is centered in their client's frame, so it moves continuously
- * across the seam and nothing is unloaded or resent when they cross.
+ * across the seam and nothing is unloaded or resent when they cross. Chunks are queued per alias:
+ * in a world narrower than the view, one canonical chunk is sent to several places.
  */
 @Mixin(ChunkMap.class)
 public abstract class ChunkMapMixin {
@@ -33,7 +37,14 @@ public abstract class ChunkMapMixin {
     ServerLevel level;
 
     @Shadow
+    @Final
+    private PlayerMap playerMap;
+
+    @Shadow
     public abstract DistanceManager getDistanceManager();
+
+    @Shadow
+    public abstract LevelChunk getChunkToSend(long chunkPos);
 
     @Inject(method = "<init>", at = @At("TAIL"))
     private void seamless$initWrap(CallbackInfo ci) {
@@ -46,35 +57,50 @@ public abstract class ChunkMapMixin {
         return wrap == null ? chunkPos : SeamWrap.canonicalChunk(wrap, chunkPos);
     }
 
-    /** Tracked if the alias of (x, z) nearest the player's view center is in view and already sent. */
+    /** Tracked if any alias of (x, z) is in the player's view and has already been sent. */
     @Inject(method = "isChunkTracked", at = @At("HEAD"), cancellable = true)
     private void seamless$isChunkTracked(ServerPlayer player, int x, int z, CallbackInfoReturnable<Boolean> cir) {
         WrapSettings wrap = SeamWrap.of(level);
         if (wrap == null) {
             return;
         }
-        long canonical = ChunkPos.asLong(wrap.wrapChunkX(x), wrap.wrapChunkZ(z));
-        cir.setReturnValue(seamless$viewContains(wrap, player.getChunkTrackingView(), x, z)
-                && !player.connection.chunkSender.isPending(canonical));
+        SeamChunkSender sender = (SeamChunkSender) player.connection.chunkSender;
+        boolean[] tracked = {false};
+        SeamAliases.forEachInView(wrap, player.getChunkTrackingView(), wrap.wrapChunkX(x), wrap.wrapChunkZ(z), (ax, az) -> {
+            if (!sender.seamless$isAliasPending(ChunkPos.asLong(ax, az))) {
+                tracked[0] = true;
+            }
+        });
+        cir.setReturnValue(tracked[0]);
     }
 
-    /** Newly generated chunks are offered to every player whose view contains any alias of them. */
-    @Redirect(method = "onChunkReadyToSend",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ChunkTrackingView;contains(Lnet/minecraft/world/level/ChunkPos;)Z"))
-    private boolean seamless$readyChunkInView(ChunkTrackingView view, ChunkPos pos) {
-        WrapSettings wrap = SeamWrap.of(level);
-        return wrap == null ? view.contains(pos) : seamless$viewContains(wrap, view, pos.x, pos.z);
-    }
-
-    /** Whether the view contains the alias of chunk (x, z) nearest its center. */
-    private static boolean seamless$viewContains(WrapSettings wrap, ChunkTrackingView view, int x, int z) {
-        if (!(view instanceof ChunkTrackingView.Positioned positioned)) {
-            return view.contains(x, z);
+    /** The tracking view hands us alias positions; remember the alias, not the canonical chunk. */
+    @Inject(method = "markChunkPendingToSend(Lnet/minecraft/server/level/ServerPlayer;Lnet/minecraft/world/level/ChunkPos;)V",
+            at = @At("HEAD"), cancellable = true)
+    private void seamless$markAliasPending(ServerPlayer player, ChunkPos alias, CallbackInfo ci) {
+        if (SeamWrap.of(level) == null) {
+            return;
         }
-        ChunkPos center = positioned.center();
-        int aliasX = x + SeamWrap.shiftX(wrap, x * 16 + 8, center.getMiddleBlockX()) / 16;
-        int aliasZ = z + SeamWrap.shiftZ(wrap, z * 16 + 8, center.getMiddleBlockZ()) / 16;
-        return view.contains(aliasX, aliasZ);
+        ci.cancel();
+        if (getChunkToSend(alias.toLong()) != null) {
+            ((SeamChunkSender) player.connection.chunkSender).seamless$markAlias(alias.toLong());
+        }
+    }
+
+    /** A chunk finished loading: queue it at every alias in every player's view. */
+    @Inject(method = "onChunkReadyToSend", at = @At("HEAD"), cancellable = true)
+    private void seamless$readyAtAliases(LevelChunk chunk, CallbackInfo ci) {
+        WrapSettings wrap = SeamWrap.of(level);
+        if (wrap == null) {
+            return;
+        }
+        ci.cancel();
+        ChunkPos pos = chunk.getPos();
+        for (ServerPlayer player : playerMap.getAllPlayers()) {
+            SeamChunkSender sender = (SeamChunkSender) player.connection.chunkSender;
+            SeamAliases.forEachInView(wrap, player.getChunkTrackingView(), pos.x, pos.z,
+                    (ax, az) -> sender.seamless$markAlias(ChunkPos.asLong(ax, az)));
+        }
     }
 
     @Redirect(method = "updateChunkTracking",

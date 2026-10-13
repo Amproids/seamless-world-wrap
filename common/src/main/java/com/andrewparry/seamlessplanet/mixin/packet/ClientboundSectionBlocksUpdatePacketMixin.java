@@ -32,6 +32,11 @@ public abstract class ClientboundSectionBlocksUpdatePacketMixin implements SeamS
     }
 
     @Override
+    public boolean seamless$allAliases() {
+        return true;
+    }
+
+    @Override
     public Object seamless$copy() {
         try {
             return clone();
