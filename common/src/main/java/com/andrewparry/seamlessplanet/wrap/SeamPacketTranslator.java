@@ -3,7 +3,14 @@ package com.andrewparry.seamlessplanet.wrap;
 import com.andrewparry.seamlessplanet.WrapSettings;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import com.andrewparry.seamlessplanet.mixin.packet.ClientboundMoveEntityPacketAccessor;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
+import net.minecraft.network.protocol.game.ClientboundAddExperienceOrbPacket;
 import net.minecraft.network.protocol.game.ClientboundBundlePacket;
+import net.minecraft.network.protocol.game.ClientboundMoveEntityPacket;
+import net.minecraft.network.protocol.game.ClientboundRemoveEntitiesPacket;
+import net.minecraft.network.protocol.game.ClientboundTeleportEntityPacket;
 import net.minecraft.network.protocol.game.ClientboundChunksBiomesPacket;
 import net.minecraft.network.protocol.game.ClientboundForgetLevelChunkPacket;
 import net.minecraft.server.level.ChunkTrackingView;
@@ -42,7 +49,8 @@ public final class SeamPacketTranslator {
     }
 
     /** A player's view of the wrapped world: where their client thinks they are. */
-    public record Frame(WrapSettings wrap, double clientX, double clientZ, ChunkTrackingView view) {
+    public record Frame(WrapSettings wrap, double clientX, double clientZ, ChunkTrackingView view,
+                        Int2ObjectMap<double[]> entityClientPos) {
         public int shiftX(double x) {
             return SeamWrap.shiftX(wrap, x, clientX);
         }
@@ -55,7 +63,7 @@ public final class SeamPacketTranslator {
     public static Frame frameOf(WrapSettings wrap, ServerPlayer player) {
         SeamPlayer seam = (SeamPlayer) player;
         return new Frame(wrap, player.getX() + seam.seamless$offsetX(), player.getZ() + seam.seamless$offsetZ(),
-                player.getChunkTrackingView());
+                player.getChunkTrackingView(), seam.seamless$entityClientPos());
     }
 
     public static Packet<?> toClient(Packet<?> packet, ServerPlayer player) {
@@ -65,6 +73,10 @@ public final class SeamPacketTranslator {
 
     @SuppressWarnings("unchecked")
     private static Packet<?> translate(Packet<?> packet, Frame frame) {
+        Packet<?> entityPacket = translateEntity(packet, frame);
+        if (entityPacket != null) {
+            return entityPacket;
+        }
         if (packet instanceof SeamShiftable shiftable) {
             return shiftable.seamless$allAliases() ? toAllAliases(shiftable, frame) : shiftable.seamless$shifted(frame);
         }
@@ -90,6 +102,48 @@ public final class SeamPacketTranslator {
             return new ClientboundChunksBiomesPacket(out);
         }
         return packet;
+    }
+
+    /**
+     * Entities are placed at the alias nearest where this client last saw them (nearest the player
+     * the first time), and their relative moves are followed, so an entity's client position never
+     * jumps to a different alias. Returns null for packets that aren't about entity positions.
+     */
+    private static Packet<?> translateEntity(Packet<?> packet, Frame frame) {
+        Int2ObjectMap<double[]> seen = frame.entityClientPos();
+        if (packet instanceof ClientboundAddEntityPacket add) {
+            return placeEntity((SeamShiftable) add, add.getId(), add.getX(), add.getZ(), null, frame);
+        }
+        if (packet instanceof ClientboundAddExperienceOrbPacket orb) {
+            return placeEntity((SeamShiftable) orb, orb.getId(), orb.getX(), orb.getZ(), null, frame);
+        }
+        if (packet instanceof ClientboundTeleportEntityPacket teleport) {
+            return placeEntity((SeamShiftable) teleport, teleport.getId(), teleport.getX(), teleport.getZ(), seen.get(teleport.getId()), frame);
+        }
+        if (packet instanceof ClientboundMoveEntityPacket move) {
+            if (move.hasPosition()) {
+                double[] pos = seen.get(((ClientboundMoveEntityPacketAccessor) move).seamless$entityId());
+                if (pos != null) {
+                    pos[0] += move.getXa() / 4096.0;
+                    pos[1] += move.getZa() / 4096.0;
+                }
+            }
+            return packet;
+        }
+        if (packet instanceof ClientboundRemoveEntitiesPacket remove) {
+            remove.getEntityIds().forEach(seen::remove);
+            return packet;
+        }
+        return null;
+    }
+
+    private static Packet<?> placeEntity(SeamShiftable packet, int id, double x, double z, double[] lastSeen, Frame frame) {
+        double nearX = lastSeen != null ? lastSeen[0] : frame.clientX();
+        double nearZ = lastSeen != null ? lastSeen[1] : frame.clientZ();
+        int dx = SeamWrap.shiftX(frame.wrap(), x, nearX);
+        int dz = SeamWrap.shiftZ(frame.wrap(), z, nearZ);
+        frame.entityClientPos().put(id, new double[]{x + dx, z + dz});
+        return offsetCopy((Packet<?>) packet, dx, dz);
     }
 
     /** One copy per alias in view, bundled; the nearest alias alone if only one is in view. */

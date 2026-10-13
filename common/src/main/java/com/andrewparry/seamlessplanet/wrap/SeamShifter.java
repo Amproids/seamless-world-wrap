@@ -1,6 +1,11 @@
 package com.andrewparry.seamlessplanet.wrap;
 
 import com.andrewparry.seamlessplanet.WrapSettings;
+import com.andrewparry.seamlessplanet.mixin.server.ChunkMapAccessor;
+import com.andrewparry.seamlessplanet.mixin.server.ServerEntityAccessor;
+import com.andrewparry.seamlessplanet.mixin.server.TrackedEntityAccessor;
+import net.minecraft.network.protocol.game.VecDeltaCodec;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
@@ -27,12 +32,29 @@ public final class SeamShifter {
         return true;
     }
 
+    /**
+     * The server remembers where it last told clients each entity was and sends movement as deltas
+     * from there. Moving that memory by the same amount turns the seam jump into an ordinary small
+     * step, so clients see the entity glide through the seam instead of teleporting.
+     */
+    private static void shiftLastSent(Entity entity, int sx, int sz) {
+        if (!(entity.level() instanceof ServerLevel level)) {
+            return;
+        }
+        Object tracked = ((ChunkMapAccessor) level.getChunkSource().chunkMap).seamless$entityMap().get(entity.getId());
+        if (tracked != null) {
+            VecDeltaCodec codec = ((ServerEntityAccessor) ((TrackedEntityAccessor) tracked).seamless$serverEntity()).seamless$positionCodec();
+            codec.setBase(codec.getBase().add(-sx, 0, -sz));
+        }
+    }
+
     private static void shift(Entity entity, int sx, int sz) {
         entity.setPos(entity.getX() - sx, entity.getY(), entity.getZ() - sz);
         entity.xo -= sx;
         entity.xOld -= sx;
         entity.zo -= sz;
         entity.zOld -= sz;
+        shiftLastSent(entity, sx, sz);
         if (entity instanceof Mob mob) {
             // Path nodes and move targets are on the other side of the seam now; pick new ones.
             mob.getNavigation().stop();
