@@ -103,6 +103,10 @@ Java 21. The build runs on JDK 21 (`gradle/gradle-daemon-jvm.properties`); Gradl
       unmodded client for the world itself.
 - [x] Small worlds: chunks are sent to every alias in view (tested with a 4 x 4 chunk torus;
       tag `experiment-4x4-torus`, preset `presets/tiny-torus-4x4.properties`).
+- [x] Seam crossing is a real teleport by one world size (speed and facing kept); the chunks around
+      the landing spot are preloaded (SeamTrackingView on the server, a far-chunk store on the client).
+      Client coordinates are canonical. Entities stay on the copy nearest the player (hitboxes), and
+      server reach is measured across seams. Tested: smooth in a 1-chunk world.
 - [x] Entity copies: the client draws every entity (and you) at each alias in render distance.
       Visual only; needs the mod on the client. You can shoot yourself in the back with an arrow.
 - [x] Per-world settings, saved in `<world>/seamless_world_wrap.json` when the world is created:
@@ -120,7 +124,6 @@ Java 21. The build runs on JDK 21 (`gradle/gradle-daemon-jvm.properties`); Gradl
 - Boats/minecarts crossing a seam will likely be rejected ("moved wrongly").
 - Cylinder north/south edges are not hard borders yet.
 - Server falls behind (2-4 s) at times, even in a 16-chunk world: needs profiling.
-- Client F3 coordinates are unwrapped (by design); no real-position display yet.
 - An axis that doesn't wrap is endless (no hard border yet).
 
 ## Goals
