@@ -50,7 +50,23 @@ public final class WorldWrapState {
      * @param worldDir  the world's folder
      * @param brandNew  true if the world has no saved data yet
      */
+    /** Works out anything a brand-new world needs from its seed (Start in a Forest). */
+    @FunctionalInterface
+    public interface NewWorldSetup {
+        WorldWrapOptions finish(WorldWrapOptions chosen);
+    }
+
+    /** Terrain offset for a dimension's noise (only the Overworld moves, for Start in a Forest). */
+    public static int[] terrainOffset(ResourceKey<Level> dimension) {
+        WorldWrapOptions o = options;
+        return dimension == Level.OVERWORLD ? new int[]{o.terrainOffsetX(), o.terrainOffsetZ()} : new int[]{0, 0};
+    }
+
     public static void load(Path worldDir, boolean brandNew) {
+        load(worldDir, brandNew, chosen -> chosen);
+    }
+
+    public static void load(Path worldDir, boolean brandNew, NewWorldSetup setup) {
         Path file = worldDir.resolve(FILE_NAME);
         WorldWrapOptions loaded;
         if (Files.exists(file)) {
@@ -63,6 +79,9 @@ public final class WorldWrapState {
                 loaded = WrapConfig.loadDefaults(SeamlessWorldWrap.configFile());
             } else {
                 loaded = WorldWrapOptions.NONE; // existing world from before the mod: leave it alone
+            }
+            if (loaded.overworld() != null) {
+                loaded = setup.finish(loaded);
             }
             write(file, loaded);
         }

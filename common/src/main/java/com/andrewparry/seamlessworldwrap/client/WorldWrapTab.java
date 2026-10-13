@@ -56,8 +56,8 @@ public class WorldWrapTab extends GridLayoutTab {
         rows.addChild(new SizeSlider("seamless_world_wrap.length", draft.overworld.lengthChunks, v -> draft.overworld.lengthChunks = v));
         rows.addChild(endWidget(new SizeSlider("seamless_world_wrap.width", draft.end.widthChunks, v -> draft.end.widthChunks = v)));
 
-        // Row: (empty) | End length
-        rows.addChild(new StringWidget(Component.empty(), font));
+        // Row: start in a forest | End length
+        rows.addChild(toggle("seamless_world_wrap.start_in_forest", draft.startInForest, v -> draft.startInForest = v));
         rows.addChild(endWidget(new SizeSlider("seamless_world_wrap.length", draft.end.lengthChunks, v -> draft.end.lengthChunks = v)));
 
         MultiLineTextWidget note = new MultiLineTextWidget(Component.translatable("seamless_world_wrap.note"), font);

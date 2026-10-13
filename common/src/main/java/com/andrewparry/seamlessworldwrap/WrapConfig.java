@@ -37,7 +37,7 @@ public final class WrapConfig {
                 case "custom" -> settings(props, "end.", overworld);
                 default -> overworld;
             };
-            return new WorldWrapOptions(overworld, end);
+            return new WorldWrapOptions(overworld, end, bool(props, "startInForest", true));
         } catch (IllegalArgumentException e) {
             SeamlessWorldWrap.LOG.error("Invalid {} ({}), using defaults", file, e.getMessage());
             return WorldWrapOptions.defaults();
@@ -89,6 +89,8 @@ public final class WrapConfig {
                         lengthChunks=64
                         # Blocks before each edge where terrain fades across it, or "auto".
                         blendWidth=auto
+                        # Move the terrain so the world's center is a forest on dry land.
+                        startInForest=true
 
                         # The End: same (as the Overworld), custom (end.* below), or off.
                         end=same

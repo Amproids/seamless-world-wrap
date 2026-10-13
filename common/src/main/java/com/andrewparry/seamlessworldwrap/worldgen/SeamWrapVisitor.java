@@ -29,10 +29,14 @@ public class SeamWrapVisitor implements DensityFunction.Visitor {
     );
 
     private final WrapSettings settings;
+    private final int offsetX;
+    private final int offsetZ;
     private final Map<DensityFunction, DensityFunction> wrapped = new HashMap<>();
 
-    public SeamWrapVisitor(WrapSettings settings) {
+    public SeamWrapVisitor(WrapSettings settings, int offsetX, int offsetZ) {
         this.settings = settings;
+        this.offsetX = offsetX;
+        this.offsetZ = offsetZ;
     }
 
     @Override
@@ -46,7 +50,7 @@ public class SeamWrapVisitor implements DensityFunction.Visitor {
             return function;
         }
         ResourceLocation type = typeOf(function);
-        return type != null && LEAF_TYPES.contains(type) ? new SeamBlendedFunction(function, settings) : function;
+        return type != null && LEAF_TYPES.contains(type) ? new SeamBlendedFunction(function, settings, offsetX, offsetZ) : function;
     }
 
     /** Registered type id, or null for runtime-only functions (from vanilla or other mods) that have none. */

@@ -18,7 +18,7 @@ import net.minecraft.world.level.levelgen.DensityFunction;
  * safe because NoiseChunk's caches fall back to direct computation for any context other than the
  * chunk itself.
  */
-public record SeamBlendedFunction(DensityFunction inner, WrapSettings settings) implements DensityFunction {
+public record SeamBlendedFunction(DensityFunction inner, WrapSettings settings, int offsetX, int offsetZ) implements DensityFunction {
 
     @Override
     public double compute(FunctionContext context) {
@@ -28,7 +28,8 @@ public record SeamBlendedFunction(DensityFunction inner, WrapSettings settings) 
         double tz = settings.wrapsZ() ? seamWeight(z - settings.minZ(), settings.height()) : 0.0;
 
         if (tx == 0.0 && tz == 0.0) {
-            return x == context.blockX() && z == context.blockZ() ? inner.compute(context) : sample(x, context.blockY(), z);
+            return x == context.blockX() && z == context.blockZ() && offsetX == 0 && offsetZ == 0
+                    ? inner.compute(context) : sample(x, context.blockY(), z);
         }
 
         int y = context.blockY();
@@ -46,7 +47,8 @@ public record SeamBlendedFunction(DensityFunction inner, WrapSettings settings) 
     }
 
     private double sample(int x, int y, int z) {
-        return inner.compute(new SinglePointContext(x, y, z));
+        // The offset shifts which part of the seed's terrain the world shows (Start in a Forest).
+        return inner.compute(new SinglePointContext(x + offsetX, y, z + offsetZ));
     }
 
     /** 0 outside the blend band; rises smoothly to 1 at the seam. {@code pos} is measured from the range start. */
@@ -74,7 +76,7 @@ public record SeamBlendedFunction(DensityFunction inner, WrapSettings settings) 
         if (mapped instanceof SeamBlendedFunction blended) {
             mapped = blended.inner;
         }
-        return visitor.apply(new SeamBlendedFunction(mapped, settings));
+        return visitor.apply(new SeamBlendedFunction(mapped, settings, offsetX, offsetZ));
     }
 
     @Override

@@ -29,6 +29,7 @@ public class RandomStateMixin {
     private NoiseRouter seamless_world_wrap$wrapRouter(NoiseRouter router, DensityFunction.Visitor visitor, Operation<NoiseRouter> original) {
         NoiseRouter wired = original.call(router, visitor);
         WrapSettings wrap = SeamWrap.CREATING.get();
-        return wrap == null ? wired : wired.mapAll(new SeamWrapVisitor(wrap));
+        int[] offset = SeamWrap.CREATING_OFFSET.get();
+        return wrap == null ? wired : wired.mapAll(new SeamWrapVisitor(wrap, offset == null ? 0 : offset[0], offset == null ? 0 : offset[1]));
     }
 }

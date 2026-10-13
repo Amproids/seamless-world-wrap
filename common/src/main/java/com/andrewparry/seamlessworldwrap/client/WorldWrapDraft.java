@@ -37,6 +37,7 @@ public final class WorldWrapDraft {
     public final Axes overworld = new Axes();
     public final Axes end = new Axes();
     public EndMode endMode = EndMode.SAME;
+    public boolean startInForest = true;
 
     public static WorldWrapDraft current() {
         return current;
@@ -53,6 +54,6 @@ public final class WorldWrapDraft {
             case CUSTOM -> end.toSettings();
             case OFF -> null;
         };
-        return new WorldWrapOptions(overworldSettings, endSettings);
+        return new WorldWrapOptions(overworldSettings, endSettings, startInForest);
     }
 }

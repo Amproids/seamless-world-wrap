@@ -15,13 +15,22 @@ import java.util.Map;
  * follows the Overworld at 1/8 size; the End has its own settings (by default the same as the
  * Overworld). Null means that dimension doesn't wrap.
  */
-public record WorldWrapOptions(@Nullable WrapSettings overworld, @Nullable WrapSettings end) {
+public record WorldWrapOptions(@Nullable WrapSettings overworld, @Nullable WrapSettings end,
+                               boolean startInForest, int terrainOffsetX, int terrainOffsetZ) {
 
-    public static final WorldWrapOptions NONE = new WorldWrapOptions(null, null);
+    public static final WorldWrapOptions NONE = new WorldWrapOptions(null, null, false, 0, 0);
+
+    public WorldWrapOptions(@Nullable WrapSettings overworld, @Nullable WrapSettings end, boolean startInForest) {
+        this(overworld, end, startInForest, 0, 0);
+    }
+
+    public WorldWrapOptions withTerrainOffset(int x, int z) {
+        return new WorldWrapOptions(overworld, end, startInForest, x, z);
+    }
 
     public static WorldWrapOptions defaults() {
         WrapSettings overworld = WrapSettings.of(true, true, 64, 64);
-        return new WorldWrapOptions(overworld, overworld);
+        return new WorldWrapOptions(overworld, overworld, true);
     }
 
     public Map<ResourceKey<Level>, WrapSettings> byDimension() {
@@ -41,11 +50,17 @@ public record WorldWrapOptions(@Nullable WrapSettings overworld, @Nullable WrapS
         json.addProperty("version", 1);
         json.add("overworld", settingsToJson(overworld));
         json.add("end", settingsToJson(end));
+        json.addProperty("startInForest", startInForest);
+        json.addProperty("terrainOffsetX", terrainOffsetX);
+        json.addProperty("terrainOffsetZ", terrainOffsetZ);
         return json;
     }
 
     public static WorldWrapOptions fromJson(JsonObject json) {
-        return new WorldWrapOptions(settingsFromJson(json.get("overworld")), settingsFromJson(json.get("end")));
+        return new WorldWrapOptions(settingsFromJson(json.get("overworld")), settingsFromJson(json.get("end")),
+                json.has("startInForest") && json.get("startInForest").getAsBoolean(),
+                json.has("terrainOffsetX") ? json.get("terrainOffsetX").getAsInt() : 0,
+                json.has("terrainOffsetZ") ? json.get("terrainOffsetZ").getAsInt() : 0);
     }
 
     private static JsonElement settingsToJson(@Nullable WrapSettings settings) {

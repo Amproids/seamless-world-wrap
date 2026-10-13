@@ -2,6 +2,7 @@ package com.andrewparry.seamlessworldwrap.mixin.server;
 
 import com.andrewparry.seamlessworldwrap.WorldWrapState;
 import com.andrewparry.seamlessworldwrap.WrapSettings;
+import com.andrewparry.seamlessworldwrap.worldgen.ForestFinder;
 import com.andrewparry.seamlessworldwrap.wrap.SeamWrap;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -31,7 +32,14 @@ public abstract class MinecraftServerMixin {
     @Inject(method = "createLevels", at = @At("HEAD"))
     private void seamless$loadWrap(CallbackInfo ci) {
         boolean brandNew = !Files.exists(storageSource.getLevelPath(LevelResource.LEVEL_DATA_FILE));
-        WorldWrapState.load(storageSource.getLevelPath(LevelResource.ROOT), brandNew);
+        MinecraftServer server = (MinecraftServer) (Object) this;
+        WorldWrapState.load(storageSource.getLevelPath(LevelResource.ROOT), brandNew, chosen -> {
+            if (!chosen.startInForest()) {
+                return chosen;
+            }
+            int[] offset = ForestFinder.find(server.registryAccess(), server.getWorldData().worldGenOptions().seed(), chosen.overworld());
+            return chosen.withTerrainOffset(offset[0], offset[1]);
+        });
     }
 
     @Inject(method = "stopServer", at = @At("TAIL"))

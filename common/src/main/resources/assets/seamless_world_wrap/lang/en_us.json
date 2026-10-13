@@ -6,6 +6,7 @@
   "seamless_world_wrap.north_south": "Wrap North-South",
   "seamless_world_wrap.width": "Width: %s chunks",
   "seamless_world_wrap.length": "Length: %s chunks",
+  "seamless_world_wrap.start_in_forest": "Start in a Forest",
   "seamless_world_wrap.end_mode": "The End",
   "seamless_world_wrap.end_mode.same": "Same as Overworld",
   "seamless_world_wrap.end_mode.custom": "Custom",

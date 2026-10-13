@@ -1,5 +1,6 @@
 package com.andrewparry.seamlessworldwrap.mixin.server;
 
+import com.andrewparry.seamlessworldwrap.WorldWrapState;
 import com.andrewparry.seamlessworldwrap.WrapSettings;
 import com.andrewparry.seamlessworldwrap.wrap.SeamPlayer;
 import com.andrewparry.seamlessworldwrap.wrap.SeamWrap;
@@ -62,10 +63,12 @@ public abstract class ChunkMapMixin {
     private RandomState seamless$noiseForThisLevel(NoiseGeneratorSettings settings, HolderGetter<NormalNoise.NoiseParameters> noises,
                                                    long seed, Operation<RandomState> original) {
         SeamWrap.CREATING.set(SeamWrap.of(level));
+        SeamWrap.CREATING_OFFSET.set(WorldWrapState.terrainOffset(level.dimension()));
         try {
             return original.call(settings, noises, seed);
         } finally {
             SeamWrap.CREATING.remove();
+            SeamWrap.CREATING_OFFSET.remove();
         }
     }
 

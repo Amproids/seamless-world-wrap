@@ -21,6 +21,8 @@ public final class SeamWrap {
 
     /** Wrap of the level whose chunk map (and so whose noise) is being created on this thread. */
     public static final ThreadLocal<WrapSettings> CREATING = new ThreadLocal<>();
+    /** Terrain offset {x, z} for that level's noise (Start in a Forest). */
+    public static final ThreadLocal<int[]> CREATING_OFFSET = new ThreadLocal<>();
 
     private SeamWrap() {
     }
