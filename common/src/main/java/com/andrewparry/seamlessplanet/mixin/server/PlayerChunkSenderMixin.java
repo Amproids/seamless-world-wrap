@@ -26,6 +26,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.IdentityHashMap;
+import java.util.Map;
 import java.util.List;
 
 /**
@@ -118,11 +120,14 @@ public abstract class PlayerChunkSenderMixin implements SeamChunkSender {
 
         unacknowledgedBatches++;
         player.connection.send(ClientboundChunkBatchStartPacket.INSTANCE);
+        // Serializing a chunk is the expensive part; in a small world the same chunk is sent to
+        // many aliases in one batch, so build it once and send shifted copies.
+        Map<LevelChunk, ClientboundLevelChunkWithLightPacket> built = new IdentityHashMap<>();
         for (int i = 0; i < chunks.size(); i++) {
             long alias = batch.get(i)[0];
             LevelChunk chunk = chunks.get(i);
             pendingChunks.remove(alias);
-            var packet = new ClientboundLevelChunkWithLightPacket(chunk, level.getLightEngine(), null, null);
+            var packet = built.computeIfAbsent(chunk, c -> new ClientboundLevelChunkWithLightPacket(c, level.getLightEngine(), null, null));
             int dx = (ChunkPos.getX(alias) - chunk.getPos().x) * 16;
             int dz = (ChunkPos.getZ(alias) - chunk.getPos().z) * 16;
             SeamPacketTranslator.sendExact(player.connection, SeamPacketTranslator.offsetCopy(packet, dx, dz));
