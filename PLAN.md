@@ -118,6 +118,13 @@ Java 21. The build runs on JDK 21 (`gradle/gradle-daemon-jvm.properties`); Gradl
 - Client F3 coordinates are unwrapped (by design); no real-position display yet.
 - World size is global config, not stored per world; multiplayer clients don't receive it.
 
+## Goals
+
+- **Pathfinding across seams:** mobs path through an edge like anywhere else (distances and node
+  positions remapped through the wrap).
+- **Compatibility with popular mods**, especially **Distant Horizons** (its far-away terrain should
+  show the wrapped world, not unrelated terrain past the edge).
+
 ## Next steps (candidates)
 
 1. Wrap-aware entity queries (hit detection, collisions, AI across seams).
