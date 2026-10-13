@@ -11,12 +11,12 @@ Walk off one edge of the world and arrive on the other, with no wall, loading sc
 Your world becomes finite, with its edges stitched together. Keep walking in one direction and you end up right back where you started. No walls, no loading screens, and no visible seam.
 
 ## What you can do
-- 🚶 **Walk, fly, or sail around the whole world** and come back home
-- 🧱 **Build right across the edge**. There's only one copy of the world, so both sides really are the same blocks
-- 🏹 **Shoot an arrow all the way around the world** and hit yourself in the back
-- 🚃 **Ride minecarts in a loop** around the world
-- 🪞 **Tiny worlds turn into a hall of mirrors**. You can see yourself and every mob repeating in the distance
-- 🐉 **Beat the game in one chunk**. Small worlds get an End portal room, a blaze spawner, and a dragon fight scaled to fit
+- **Walk, fly, or sail around the whole world** and come back home
+- **Build right across the edge**. There's only one copy of the world, so both sides really are the same blocks
+- **Shoot an arrow all the way around the world** and hit yourself in the back
+- **Ride minecarts in a loop** around the world
+- **Tiny worlds turn into a hall of mirrors**. You can see yourself and every mob repeating in the distance
+- **Beat the game in one chunk**. Small worlds get an End portal room, a blaze spawner, and a dragon fight scaled to fit
 
 ## Under the hood
 - **One real world, wrapped coordinates.** Everything past an edge maps back into the world with a modulus, so nothing is duplicated, and the chunks on the other side are the actual chunks.
@@ -37,7 +37,7 @@ The Nether wraps at 1/8 scale, so portal coordinates still line up. Settings are
 - Minecraft **1.21.1** with **Fabric** (plus Fabric API) or **NeoForge**
 - Install on **both** the server and the client. In singleplayer, that's just your game
 
-⚠️ **Alpha release!** Back up any world you care about.
+**Alpha release!** Back up any world you care about.
 
 **Known limits:** mobs don't track you across an edge yet, light doesn't propagate across an edge, an axis that doesn't wrap is unbounded, and with Sodium nearby chunks rebuild briefly after crossing.
 
