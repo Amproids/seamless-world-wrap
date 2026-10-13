@@ -1,17 +1,13 @@
 package com.andrewparry.seamlessworldwrap.mixin.client;
 
 import com.andrewparry.seamlessworldwrap.WrapSettings;
+import com.andrewparry.seamlessworldwrap.client.ClientEntityShift;
 import com.andrewparry.seamlessworldwrap.network.ClientWrapState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.network.protocol.game.VecDeltaCodec;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.vehicle.AbstractMinecart;
-import net.minecraft.world.entity.vehicle.Boat;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -42,35 +38,8 @@ public abstract class ClientLevelMixin {
             double sx = wrap.wrapsX() ? Math.round((player.getX() - entity.getX()) / wrap.width()) * (double) wrap.width() : 0.0;
             double sz = wrap.wrapsZ() ? Math.round((player.getZ() - entity.getZ()) / wrap.height()) * (double) wrap.height() : 0.0;
             if (sx != 0.0 || sz != 0.0) {
-                seamless$shift(entity, sx, sz);
+                ClientEntityShift.shift(entity, sx, sz);
             }
-        }
-    }
-
-    @Unique
-    private static void seamless$shift(Entity entity, double sx, double sz) {
-        entity.setPos(entity.getX() + sx, entity.getY(), entity.getZ() + sz);
-        entity.xo += sx;
-        entity.xOld += sx;
-        entity.zo += sz;
-        entity.zOld += sz;
-        VecDeltaCodec codec = entity.getPositionCodec();
-        codec.setBase(codec.getBase().add(sx, 0, sz));
-        if (entity instanceof LivingEntity) {
-            LivingEntityLerpAccessor lerp = (LivingEntityLerpAccessor) entity;
-            lerp.seamless$setLerpX(lerp.seamless$lerpX() + sx);
-            lerp.seamless$setLerpZ(lerp.seamless$lerpZ() + sz);
-        } else if (entity instanceof AbstractMinecart) {
-            AbstractMinecartLerpAccessor lerp = (AbstractMinecartLerpAccessor) entity;
-            lerp.seamless$setLerpX(lerp.seamless$lerpX() + sx);
-            lerp.seamless$setLerpZ(lerp.seamless$lerpZ() + sz);
-        } else if (entity instanceof Boat) {
-            BoatLerpAccessor lerp = (BoatLerpAccessor) entity;
-            lerp.seamless$setLerpX(lerp.seamless$lerpX() + sx);
-            lerp.seamless$setLerpZ(lerp.seamless$lerpZ() + sz);
-        }
-        for (Entity passenger : entity.getPassengers()) {
-            seamless$shift(passenger, sx, sz);
         }
     }
 }

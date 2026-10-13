@@ -1,6 +1,11 @@
 package com.andrewparry.seamlessworldwrap.mixin.client;
 
+import com.andrewparry.seamlessworldwrap.client.ClientEntityShift;
 import com.andrewparry.seamlessworldwrap.network.ClientWrapState;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.protocol.game.ClientboundPlayerPositionPacket;
+import net.minecraft.world.entity.RelativeMovement;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.network.protocol.game.ClientboundLoginPacket;
 import com.andrewparry.seamlessworldwrap.WrapSettings;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -49,6 +54,29 @@ public abstract class ClientPacketListenerMixin {
         entity.xOld += sx;
         entity.zo += sz;
         entity.zOld += sz;
+    }
+
+    /**
+     * A seam teleport of the player while riding: move the vehicle (and its other passengers) by the
+     * same amount right away. Otherwise, for a frame, the player is at the new spot and the vehicle
+     * still at the old one until its own update arrives, and riding snaps the camera back.
+     */
+    @Inject(method = "handleMovePlayer",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/network/protocol/PacketUtils;ensureRunningOnSameThread(Lnet/minecraft/network/protocol/Packet;Lnet/minecraft/network/PacketListener;Lnet/minecraft/util/thread/BlockableEventLoop;)V",
+                    shift = At.Shift.AFTER))
+    private void seamless$moveVehicleWithPlayer(ClientboundPlayerPositionPacket packet, CallbackInfo ci) {
+        Player player = Minecraft.getInstance().player;
+        WrapSettings wrap = level == null ? null : ClientWrapState.forDimension(level.dimension());
+        if (wrap == null || player == null || !player.isPassenger()) {
+            return;
+        }
+        double dx = packet.getRelativeArguments().contains(RelativeMovement.X) ? packet.getX() : packet.getX() - player.getX();
+        double dz = packet.getRelativeArguments().contains(RelativeMovement.Z) ? packet.getZ() : packet.getZ() - player.getZ();
+        double sx = wrap.wrapsX() ? ClientEntityShift.seamShift(dx, wrap.width(), MAX_STEP) : 0.0;
+        double sz = wrap.wrapsZ() ? ClientEntityShift.seamShift(dz, wrap.height(), MAX_STEP) : 0.0;
+        if (sx != 0.0 || sz != 0.0) {
+            ClientEntityShift.shift(player.getRootVehicle(), sx, sz);
+        }
     }
 
     /** A new server: forget the last one's wrap until this one says otherwise. */
