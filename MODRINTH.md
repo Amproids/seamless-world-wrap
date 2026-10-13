@@ -1,45 +1,41 @@
 # Modrinth page text
 
 ## Summary (under 256 characters)
-Walk off one edge of the world and arrive on the other, with no wall, loading screen, or visible seam. Build right across the edge, loop east to west or all four edges, and pick the world size.
+Makes the world a fixed size and connects opposite edges, so walking off one side puts you on the other. No wall and no loading screen. Works east-west, north-south, or both.
 
 ## Description
 # Seamless World Wrap 🌍
 
-**Walk off the edge of the world... and come back on the other side.**
+Seamless World Wrap gives a world a fixed size and connects its opposite edges. Walk off the east edge and you come in from the west. There's no wall, no loading screen and no visible seam.
 
-Your world becomes finite, with its edges stitched together. Keep walking in one direction and you end up right back where you started. No walls, no loading screens, and no visible seam.
+## Features
+- Wrap east-west, north-south, or both.
+- World size from 1 x 1 chunk up to 2048 x 2048 chunks.
+- The Nether wraps at 1/8 of the Overworld size, so portals still line up.
+- The End can match the Overworld, use its own size, or not wrap.
+- Terrain is blended at the edges so it continues across them.
+- Blocks, redstone, structures, mobs, minecarts and projectiles work across the edges.
+- In small worlds you can see repeated copies of the world, yourself and mobs in the distance.
+- "Start in a Forest" moves the terrain so the world is centered on dry land with trees.
+- Worlds too small for a stronghold or fortress get an End portal room and a blaze spawner, and the dragon fight is scaled down to fit small Ends.
 
-## What you can do
-- **Walk, fly, or sail around the whole world** and come back home
-- **Build right across the edge**. There's only one copy of the world, so both sides really are the same blocks
-- **Shoot an arrow all the way around the world** and hit yourself in the back
-- **Ride minecarts in a loop** around the world
-- **Tiny worlds turn into a hall of mirrors**. You can see yourself and every mob repeating in the distance
-- **Beat the game in one chunk**. Small worlds get an End portal room, a blaze spawner, and a dragon fight scaled to fit
+## How it works
+There is only one copy of the world. Anything past an edge maps back into it, so both sides of an edge are the same blocks. Chunks near your landing point are sent before you reach the edge, and crossing moves you by exactly one world size without reloading what's on screen. Terrain blending uses Minecraft's own terrain system, so world generation mods built on it should blend at the edges too.
 
-## Under the hood
-- **One real world, wrapped coordinates.** Everything past an edge maps back into the world with a modulus, so nothing is duplicated, and the chunks on the other side are the actual chunks.
-- **Seamless crossing.** The chunks around your landing spot are preloaded before you reach the edge. When you cross, you're teleported by exactly one world size, and the chunks you already see are reused instead of rebuilt.
-- **Seam-blended terrain.** The terrain noise is blended across each edge, so mountains, rivers, and biomes flow straight through it. This works on Minecraft's own terrain system, so most worldgen mods that build on it should blend too.
-- **Cross-seam gameplay.** Block updates, redstone, structures, projectiles, and entity hitboxes all resolve across the edge.
+## Setup
+Choose the settings on the World Wrap tab when creating a world. Settings are saved with each world. Worlds created before the mod was installed don't wrap.
 
-## Shape your world
-Open the **World Wrap** tab when you create a world:
-- **Wrap East-West** and **Wrap North-South**: loop one axis (a cylinder) or both (a torus, like Pac-Man)
-- **Width and length**: from a single chunk up to 2,048 chunks
-- **Start in a Forest**: shifts the terrain so the world is centered on dry, forested land
-- **The End**: same as the Overworld, its own size, or normal
+## Requirements
+- Minecraft 1.21.1
+- Fabric with Fabric API, or NeoForge
+- Install on both the client and the server (in singleplayer, just your game)
 
-The Nether wraps at 1/8 scale, so portal coordinates still line up. Settings are saved per world, and worlds made before the mod was installed never wrap.
-
-## How to install
-- Minecraft **1.21.1** with **Fabric** (plus Fabric API) or **NeoForge**
-- Install on **both** the server and the client. In singleplayer, that's just your game
-
-**Alpha release!** Back up any world you care about.
-
-**Known limits:** mobs don't track you across an edge yet, light doesn't propagate across an edge, an axis that doesn't wrap is unbounded, and with Sodium nearby chunks rebuild briefly after crossing.
+## Known issues
+This is an alpha. Back up worlds you care about.
+- Mobs don't follow or pathfind across an edge yet.
+- Light doesn't spread across an edge.
+- An axis that doesn't wrap has no border.
+- With Sodium, chunks near you rebuild briefly after crossing an edge.
 
 ## Upload details
 - Versions: `release/seamless_world_wrap-fabric-1.21.1-0.1.0-alpha.jar` (loader Fabric, needs Fabric API),
