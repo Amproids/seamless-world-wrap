@@ -1,55 +1,41 @@
 package com.andrewparry.seamlessworldwrap.mixin.server;
 
-import com.andrewparry.seamlessworldwrap.SeamlessWorldWrap;
-import com.andrewparry.seamlessworldwrap.WrapSettings;
+import net.minecraft.server.level.GenerationChunkHolder;
 import net.minecraft.util.StaticCache2D;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.ModifyVariable;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * Chunk generation works on a grid of neighbor holders around the chunk being generated. Near a
- * seam, a neighbor's canonical position isn't on that grid, but one of its aliases is. Vanilla
- * would throw for any out-of-range request, so only those requests are redirected to the alias.
+ * seam, code asks for a neighbor by its canonical position, which isn't on the grid, though the
+ * same holder is (at its alias). Vanilla would throw for any out-of-range request, so only those
+ * requests are answered, by finding the holder whose position is the one asked for.
  */
 @Mixin(StaticCache2D.class)
-public abstract class StaticCache2DMixin {
+public abstract class StaticCache2DMixin<T> {
 
     @Shadow
     @Final
-    private int minX;
+    private Object[] cache;
 
     @Shadow
-    @Final
-    private int minZ;
+    public abstract boolean contains(int x, int z);
 
-    @Shadow
-    @Final
-    private int sizeX;
-
-    @Shadow
-    @Final
-    private int sizeZ;
-
-    @ModifyVariable(method = "get", at = @At("HEAD"), ordinal = 0, argsOnly = true)
-    private int seamless$aliasX(int x) {
-        WrapSettings wrap = SeamlessWorldWrap.settings();
-        return seamless$intoRange(x, minX, sizeX, wrap.widthChunks());
-    }
-
-    @ModifyVariable(method = "get", at = @At("HEAD"), ordinal = 1, argsOnly = true)
-    private int seamless$aliasZ(int z) {
-        WrapSettings wrap = SeamlessWorldWrap.settings();
-        return wrap.shape().wrapsZ() ? seamless$intoRange(z, minZ, sizeZ, wrap.heightChunks()) : z;
-    }
-
-    private static int seamless$intoRange(int value, int min, int size, int period) {
-        if (value >= min && value < min + size) {
-            return value;
+    @Inject(method = "get", at = @At("HEAD"), cancellable = true)
+    @SuppressWarnings("unchecked")
+    private void seamless$findAlias(int x, int z, CallbackInfoReturnable<T> cir) {
+        if (contains(x, z)) {
+            return;
         }
-        int alias = min + Math.floorMod(value - min, period);
-        return alias < min + size ? alias : value;
+        for (Object value : cache) {
+            if (value instanceof GenerationChunkHolder holder && holder.getPos().x == x && holder.getPos().z == z) {
+                cir.setReturnValue((T) value);
+                return;
+            }
+        }
     }
 }

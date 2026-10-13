@@ -1,12 +1,12 @@
 package com.andrewparry.seamlessworldwrap.mixin.client;
 
-import com.andrewparry.seamlessworldwrap.SeamlessWorldWrap;
+import com.andrewparry.seamlessworldwrap.network.ClientWrapState;
+import net.minecraft.network.protocol.game.ClientboundLoginPacket;
 import com.andrewparry.seamlessworldwrap.WrapSettings;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.network.protocol.game.ClientboundTeleportEntityPacket;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.level.Level;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -31,16 +31,16 @@ public abstract class ClientPacketListenerMixin {
     @Inject(method = "handleTeleportEntity",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Entity;syncPacketPositionCodec(DDD)V"))
     private void seamless$seamTeleport(ClientboundTeleportEntityPacket packet, CallbackInfo ci) {
-        if (level == null || level.dimension() != Level.OVERWORLD) {
+        WrapSettings wrap = level == null ? null : ClientWrapState.forDimension(level.dimension());
+        if (wrap == null) {
             return;
         }
         Entity entity = level.getEntity(packet.getId());
         if (entity == null) {
             return;
         }
-        WrapSettings wrap = SeamlessWorldWrap.settings();
-        double sx = seamless$seamShift(packet.getX() - entity.getX(), wrap.width());
-        double sz = wrap.shape().wrapsZ() ? seamless$seamShift(packet.getZ() - entity.getZ(), wrap.height()) : 0.0;
+        double sx = wrap.wrapsX() ? seamless$seamShift(packet.getX() - entity.getX(), wrap.width()) : 0.0;
+        double sz = wrap.wrapsZ() ? seamless$seamShift(packet.getZ() - entity.getZ(), wrap.height()) : 0.0;
         if (sx == 0.0 && sz == 0.0) {
             return;
         }
@@ -49,6 +49,12 @@ public abstract class ClientPacketListenerMixin {
         entity.xOld += sx;
         entity.zo += sz;
         entity.zOld += sz;
+    }
+
+    /** A new server: forget the last one's wrap until this one says otherwise. */
+    @Inject(method = "handleLogin", at = @At("HEAD"))
+    private void seamless$resetWrap(ClientboundLoginPacket packet, CallbackInfo ci) {
+        ClientWrapState.clear();
     }
 
     /** The whole-world part of a move, if the rest of it is a normal step; otherwise 0. */

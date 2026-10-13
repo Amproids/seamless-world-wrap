@@ -105,7 +105,12 @@ Java 21. The build runs on JDK 21 (`gradle/gradle-daemon-jvm.properties`); Gradl
       tag `experiment-4x4-torus`, preset `presets/tiny-torus-4x4.properties`).
 - [x] Entity copies: the client draws every entity (and you) at each alias in render distance.
       Visual only; needs the mod on the client. You can shoot yourself in the back with an arrow.
-- [x] Config: `config/seamless_world_wrap.properties` (shape, size, blend). Global, not per world yet.
+- [x] Per-world settings, saved in `<world>/seamless_world_wrap.json` when the world is created:
+      **World Wrap** tab on the Create World screen (Overworld east-west / north-south switches,
+      width, length; the End: same as Overworld / custom / off). The Nether follows the Overworld
+      at 1/8 size so portals line up. World centered on 0,0. Worlds from before the mod don't wrap.
+      `config/seamless_world_wrap.properties` = defaults for new worlds made without the screen
+      (dedicated servers). Settings are synced to clients with the mod (`WrapSyncPayload`).
 
 ## Known issues
 
@@ -116,7 +121,7 @@ Java 21. The build runs on JDK 21 (`gradle/gradle-daemon-jvm.properties`); Gradl
 - Cylinder north/south edges are not hard borders yet.
 - Server falls behind (2-4 s) at times, even in a 16-chunk world: needs profiling.
 - Client F3 coordinates are unwrapped (by design); no real-position display yet.
-- World size is global config, not stored per world; multiplayer clients don't receive it.
+- An axis that doesn't wrap is endless (no hard border yet).
 
 ## Goals
 
@@ -130,5 +135,4 @@ Java 21. The build runs on JDK 21 (`gradle/gradle-daemon-jvm.properties`); Gradl
 1. Wrap-aware entity queries (hit detection, collisions, AI across seams).
 2. Profile the server lag.
 3. Hard borders for the cylinder; light across seams; vehicles.
-4. Per-world settings + world-creation screen; sync settings to clients.
 5. Publish: Modrinth + CurseForge page, icon, screenshots.

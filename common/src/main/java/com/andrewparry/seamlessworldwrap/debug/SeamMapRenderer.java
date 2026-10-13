@@ -52,10 +52,12 @@ public final class SeamMapRenderer {
         int minY = level.getMinBuildHeight();
         int maxY = level.getMaxBuildHeight();
 
-        int minX = -settings.width() / 2;
-        int spanX = settings.width() * 2;
-        int minZ = settings.shape().wrapsZ() ? -settings.height() / 2 : 0;
-        int spanZ = settings.shape().wrapsZ() ? settings.height() * 2 : settings.height();
+        // Two world sizes along each wrapped axis, centered on the real world's edge, so both seams
+        // and the repeat show; one world size along an axis that doesn't wrap.
+        int spanX = settings.wrapsX() ? settings.width() * 2 : settings.width();
+        int spanZ = settings.wrapsZ() ? settings.height() * 2 : settings.height();
+        int minX = settings.wrapsX() ? settings.minX() - settings.width() / 2 : settings.minX();
+        int minZ = settings.wrapsZ() ? settings.minZ() - settings.height() / 2 : settings.minZ();
         int w = spanX / blocksPerPixel;
         int h = spanZ / blocksPerPixel;
 
@@ -93,9 +95,11 @@ public final class SeamMapRenderer {
         }
 
         for (BufferedImage image : new BufferedImage[]{terrain, biomes}) {
-            markColumns(image, minX, blocksPerPixel, settings.width(), settings.blendWidth());
-            if (settings.shape().wrapsZ()) {
-                markRows(image, minZ, blocksPerPixel, settings.height(), settings.blendWidth());
+            if (settings.wrapsX()) {
+                markColumns(image, minX - settings.minX(), blocksPerPixel, settings.width(), settings.blendWidth());
+            }
+            if (settings.wrapsZ()) {
+                markRows(image, minZ - settings.minZ(), blocksPerPixel, settings.height(), settings.blendWidth());
             }
         }
 
@@ -138,7 +142,7 @@ public final class SeamMapRenderer {
         return function.compute(new DensityFunction.SinglePointContext(x, y, z));
     }
 
-    /** Seams at every multiple of the world width; band starts {@code blend} blocks before each. */
+    /** Seams every world width from the range start ({@code minX} is relative to it); band starts {@code blend} blocks before each. */
     private static void markColumns(BufferedImage image, int minX, int scale, int size, int blend) {
         for (int px = 0; px < image.getWidth(); px++) {
             int x = minX + px * scale;

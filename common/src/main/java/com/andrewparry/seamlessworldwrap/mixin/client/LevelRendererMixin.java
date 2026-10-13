@@ -1,6 +1,6 @@
 package com.andrewparry.seamlessworldwrap.mixin.client;
 
-import com.andrewparry.seamlessworldwrap.SeamlessWorldWrap;
+import com.andrewparry.seamlessworldwrap.network.ClientWrapState;
 import com.andrewparry.seamlessworldwrap.WrapSettings;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -14,7 +14,6 @@ import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -28,8 +27,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 /**
  * Cheap hack: draw every entity again at each of its aliases within render distance, so in a world
  * smaller than the view you see mobs, other players and yourself repeated like the terrain.
- * Copies are visual only. The client learns the world size from the shared config, so this needs
- * the mod on the client (fine in singleplayer).
+ * Copies are visual only. The client learns the world size from the server (WrapSyncPayload), so
+ * this needs the mod on both sides.
  */
 @Mixin(LevelRenderer.class)
 public abstract class LevelRendererMixin {
@@ -85,11 +84,12 @@ public abstract class LevelRendererMixin {
         if (dispatcher.shouldRender(entity, frustum, camX, camY, camZ)) {
             return true;
         }
-        if (level == null || level.dimension() != Level.OVERWORLD) {
+        WrapSettings wrap = seamless$wrap();
+        if (wrap == null) {
             return false;
         }
         boolean[] visible = {false};
-        seamless$forEachCopy(entity, camX, camZ, (dx, dz) -> {
+        seamless$forEachCopy(entity, wrap, camX, camZ, (dx, dz) -> {
             if (!visible[0] && frustum.isVisible(entity.getBoundingBoxForCulling().move(dx, 0, dz))) {
                 visible[0] = true;
             }
@@ -101,7 +101,12 @@ public abstract class LevelRendererMixin {
     @Redirect(method = "renderLevel",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/LevelRenderer;isSectionCompiled(Lnet/minecraft/core/BlockPos;)Z"))
     private boolean seamless$sectionCompiled(LevelRenderer renderer, BlockPos pos) {
-        return (level != null && level.dimension() == Level.OVERWORLD) || isSectionCompiled(pos);
+        return seamless$wrap() != null || isSectionCompiled(pos);
+    }
+
+    @Unique
+    private WrapSettings seamless$wrap() {
+        return level == null ? null : ClientWrapState.forDimension(level.dimension());
     }
 
     @Unique
@@ -111,17 +116,16 @@ public abstract class LevelRendererMixin {
 
     /** Offsets of every copy of {@code entity} within render distance of the camera (not the original). */
     @Unique
-    private void seamless$forEachCopy(Entity entity, double camX, double camZ, CopyConsumer action) {
-        WrapSettings wrap = SeamlessWorldWrap.settings();
+    private void seamless$forEachCopy(Entity entity, WrapSettings wrap, double camX, double camZ, CopyConsumer action) {
         double reach = minecraft.options.getEffectiveRenderDistance() * 16.0;
         double ex = entity.getX();
         double ez = entity.getZ();
         int w = wrap.width();
         int h = wrap.height();
-        int kMin = (int) Math.ceil((camX - reach - ex) / w);
-        int kMax = (int) Math.floor((camX + reach - ex) / w);
-        int mMin = wrap.shape().wrapsZ() ? (int) Math.ceil((camZ - reach - ez) / h) : 0;
-        int mMax = wrap.shape().wrapsZ() ? (int) Math.floor((camZ + reach - ez) / h) : 0;
+        int kMin = wrap.wrapsX() ? (int) Math.ceil((camX - reach - ex) / w) : 0;
+        int kMax = wrap.wrapsX() ? (int) Math.floor((camX + reach - ex) / w) : 0;
+        int mMin = wrap.wrapsZ() ? (int) Math.ceil((camZ - reach - ez) / h) : 0;
+        int mMax = wrap.wrapsZ() ? (int) Math.floor((camZ + reach - ez) / h) : 0;
         double reachSq = reach * reach;
         for (int k = kMin; k <= kMax; k++) {
             for (int m = mMin; m <= mMax; m++) {
@@ -142,13 +146,14 @@ public abstract class LevelRendererMixin {
     @Unique
     private void seamless$copiesOf(Entity entity, double camX, double camY, double camZ, float partialTick,
                                    PoseStack poseStack, MultiBufferSource bufferSource) {
-        if (level == null || level.dimension() != Level.OVERWORLD) {
+        WrapSettings wrap = seamless$wrap();
+        if (wrap == null) {
             return;
         }
         seamless$renderingCopy = true;
         try {
             // Moving the camera the other way draws the entity shifted by (dx, dz).
-            seamless$forEachCopy(entity, camX, camZ, (dx, dz) ->
+            seamless$forEachCopy(entity, wrap, camX, camZ, (dx, dz) ->
                     renderEntity(entity, camX - dx, camY, camZ - dz, partialTick, poseStack, bufferSource));
         } finally {
             seamless$renderingCopy = false;

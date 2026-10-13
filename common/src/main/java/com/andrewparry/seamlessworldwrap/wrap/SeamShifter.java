@@ -18,8 +18,8 @@ public final class SeamShifter {
 
     /** Shifts {@code root} and its passengers into range if needed. Returns true if anything moved. */
     public static boolean shiftIntoRange(Entity root, WrapSettings wrap) {
-        int sx = (int) Math.floor(root.getX() / wrap.width()) * wrap.width();
-        int sz = wrap.shape().wrapsZ() ? (int) Math.floor(root.getZ() / wrap.height()) * wrap.height() : 0;
+        int sx = wrap.shiftIntoRangeX(root.getX());
+        int sz = wrap.shiftIntoRangeZ(root.getZ());
         if (sx == 0 && sz == 0) {
             return false;
         }

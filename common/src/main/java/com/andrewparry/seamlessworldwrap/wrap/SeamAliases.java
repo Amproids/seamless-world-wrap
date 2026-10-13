@@ -26,18 +26,16 @@ public final class SeamAliases {
         int cz = positioned.center().z;
         int w = wrap.widthChunks();
         int h = wrap.heightChunks();
-        // First alias at or after the west/north edge of the view.
-        int startX = cx - reach + Math.floorMod(chunkX - (cx - reach), w);
-        for (int ax = startX; ax <= cx + reach; ax += w) {
-            if (wrap.shape().wrapsZ()) {
-                int startZ = cz - reach + Math.floorMod(chunkZ - (cz - reach), h);
-                for (int az = startZ; az <= cz + reach; az += h) {
-                    if (view.contains(ax, az)) {
-                        action.accept(ax, az);
-                    }
+        // First alias at or after the west/north edge of the view; a non-wrapping axis has just one.
+        int startX = wrap.wrapsX() ? cx - reach + Math.floorMod(chunkX - (cx - reach), w) : chunkX;
+        int endX = wrap.wrapsX() ? cx + reach : chunkX;
+        int startZ = wrap.wrapsZ() ? cz - reach + Math.floorMod(chunkZ - (cz - reach), h) : chunkZ;
+        int endZ = wrap.wrapsZ() ? cz + reach : chunkZ;
+        for (int ax = startX; ax <= endX; ax += w) {
+            for (int az = startZ; az <= endZ; az += h) {
+                if (view.contains(ax, az)) {
+                    action.accept(ax, az);
                 }
-            } else if (view.contains(ax, chunkZ)) {
-                action.accept(ax, chunkZ);
             }
         }
     }

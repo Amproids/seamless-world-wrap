@@ -4,7 +4,13 @@ import com.andrewparry.seamlessworldwrap.WrapSettings;
 import com.andrewparry.seamlessworldwrap.wrap.SeamPlayer;
 import com.andrewparry.seamlessworldwrap.wrap.SeamWrap;
 import com.andrewparry.seamlessworldwrap.wrap.SeamWrapHolder;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import net.minecraft.core.HolderGetter;
 import net.minecraft.server.level.ChunkMap;
+import net.minecraft.world.level.levelgen.NoiseGeneratorSettings;
+import net.minecraft.world.level.levelgen.RandomState;
+import net.minecraft.world.level.levelgen.synth.NormalNoise;
 import net.minecraft.server.level.PlayerMap;
 import net.minecraft.world.level.chunk.LevelChunk;
 import com.andrewparry.seamlessworldwrap.wrap.SeamAliases;
@@ -45,6 +51,19 @@ public abstract class ChunkMapMixin {
 
     @Shadow
     public abstract LevelChunk getChunkToSend(long chunkPos);
+
+    /** The chunk map creates this level's noise; tell the noise which wrap it's for. */
+    @WrapOperation(method = "<init>", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/world/level/levelgen/RandomState;create(Lnet/minecraft/world/level/levelgen/NoiseGeneratorSettings;Lnet/minecraft/core/HolderGetter;J)Lnet/minecraft/world/level/levelgen/RandomState;"))
+    private RandomState seamless$noiseForThisLevel(NoiseGeneratorSettings settings, HolderGetter<NormalNoise.NoiseParameters> noises,
+                                                   long seed, Operation<RandomState> original) {
+        SeamWrap.CREATING.set(SeamWrap.of(level));
+        try {
+            return original.call(settings, noises, seed);
+        } finally {
+            SeamWrap.CREATING.remove();
+        }
+    }
 
     @Inject(method = "<init>", at = @At("TAIL"))
     private void seamless$initWrap(CallbackInfo ci) {

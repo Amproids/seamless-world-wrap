@@ -135,11 +135,11 @@ public abstract class ServerGamePacketListenerImplMixin implements SeamListener 
         double cz = relative.contains(RelativeMovement.Z) ? z : wrap.wrapZ(z);
         int offsetX = seam.seamless$offsetX();
         int offsetZ = seam.seamless$offsetZ();
-        if (!relative.contains(RelativeMovement.X)) {
+        if (!relative.contains(RelativeMovement.X) && wrap.wrapsX()) {
             double clientX = player.getX() + offsetX;
             offsetX = (int) Math.round((clientX - cx) / wrap.width()) * wrap.width();
         }
-        if (!relative.contains(RelativeMovement.Z) && wrap.shape().wrapsZ()) {
+        if (!relative.contains(RelativeMovement.Z) && wrap.wrapsZ()) {
             double clientZ = player.getZ() + offsetZ;
             offsetZ = (int) Math.round((clientZ - cz) / wrap.height()) * wrap.height();
         }

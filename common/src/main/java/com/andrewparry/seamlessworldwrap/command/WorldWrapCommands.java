@@ -1,7 +1,9 @@
 package com.andrewparry.seamlessworldwrap.command;
 
 import com.andrewparry.seamlessworldwrap.SeamlessWorldWrap;
+import com.andrewparry.seamlessworldwrap.WrapSettings;
 import com.andrewparry.seamlessworldwrap.debug.SeamMapRenderer;
+import com.andrewparry.seamlessworldwrap.wrap.SeamWrap;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
@@ -35,13 +37,18 @@ public final class WorldWrapCommands {
     private static int renderMap(CommandContext<CommandSourceStack> context, int blocksPerPixel) {
         CommandSourceStack source = context.getSource();
         ServerLevel level = source.getLevel();
+        WrapSettings wrap = SeamWrap.of(level);
+        if (wrap == null) {
+            source.sendFailure(Component.literal("This dimension doesn't wrap."));
+            return 0;
+        }
         Path outDir = source.getServer().getWorldPath(LevelResource.ROOT).resolve(SeamlessWorldWrap.MOD_ID).resolve("maps");
         source.sendSuccess(() -> Component.literal("Rendering seam map (" + blocksPerPixel + " blocks per pixel)..."), false);
 
         // Sampling the generator is thread-safe (worldgen does it off-thread), so keep the server responsive.
         CompletableFuture.supplyAsync(() -> {
             try {
-                return SeamMapRenderer.render(level, SeamlessWorldWrap.settings(), blocksPerPixel, outDir,
+                return SeamMapRenderer.render(level, wrap, blocksPerPixel, outDir,
                         percent -> source.getServer().execute(() ->
                                 source.sendSuccess(() -> Component.literal("  " + percent + "%"), false)));
             } catch (Exception e) {

@@ -1,6 +1,7 @@
 package com.andrewparry.seamlessworldwrap.mixin;
 
-import com.andrewparry.seamlessworldwrap.SeamlessWorldWrap;
+import com.andrewparry.seamlessworldwrap.WrapSettings;
+import com.andrewparry.seamlessworldwrap.wrap.SeamWrap;
 import com.andrewparry.seamlessworldwrap.worldgen.SeamWrapVisitor;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
@@ -12,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.At;
 
 /**
  * Right after vanilla wires real noise instances into the router, wrap its noise leaves so the
- * terrain repeats and blends across the seams. The climate sampler (biomes) is built from this
+ * terrain repeats and blends across the seams. Only for the level being created (see ChunkMapMixin). The climate sampler (biomes) is built from this
  * same router afterwards, so biomes wrap too.
  */
 @Mixin(RandomState.class)
@@ -27,6 +28,7 @@ public class RandomStateMixin {
     )
     private NoiseRouter seamless_world_wrap$wrapRouter(NoiseRouter router, DensityFunction.Visitor visitor, Operation<NoiseRouter> original) {
         NoiseRouter wired = original.call(router, visitor);
-        return wired.mapAll(new SeamWrapVisitor(SeamlessWorldWrap.settings()));
+        WrapSettings wrap = SeamWrap.CREATING.get();
+        return wrap == null ? wired : wired.mapAll(new SeamWrapVisitor(wrap));
     }
 }
