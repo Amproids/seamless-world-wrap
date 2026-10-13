@@ -1,4 +1,4 @@
-# Minecraft Mod — Plan
+# Seamless World Wrap — Plan
 
 Started 2026-10-12.
 
@@ -90,10 +90,11 @@ Java 21. The build runs on JDK 21 (`gradle/gradle-daemon-jvm.properties`); Gradl
 
 ## Progress
 
-- [x] Name: **Seamless Planet** (mod ID `seamless_planet`, package `com.andrewparry.seamlessplanet`). License: MIT (changeable).
-- [x] Multi-loader project (1.21.1). `./gradlew build` produces `fabric/build/libs/seamless_planet-fabric-1.21.1-<version>.jar` and `neoforge/build/libs/seamless_planet-neoforge-1.21.1-<version>.jar`.
+- [x] Name: **Seamless World Wrap** (mod ID `seamless_world_wrap`, package `com.andrewparry.seamlessworldwrap`,
+      Modrinth slug `seamless-world-wrap`). Renamed from "Seamless Planet" before release. License: MIT.
+- [x] Multi-loader project (1.21.1). `./gradlew build` produces `fabric/build/libs/seamless_world_wrap-fabric-1.21.1-<version>.jar` and `neoforge/build/libs/seamless_world_wrap-neoforge-1.21.1-<version>.jar`.
 - [x] Seamless worldgen: density-function noise leaves blended at the seams (`worldgen/`).
-- [x] `/seamlessplanet map [blocksPerPixel]`: terrain + biome PNGs straight from the generator.
+- [x] `/worldwrap map [blocksPerPixel]`: terrain + biome PNGs straight from the generator.
 - [x] Real loop (`wrap/`, `mixin/server`, `mixin/packet`): the server keeps one canonical world;
       chunks, tickets, block writes, block entities and ticks are canonical. Players carry an
       offset (client = canonical + offset) and are moved back into range after crossing, without
@@ -104,7 +105,7 @@ Java 21. The build runs on JDK 21 (`gradle/gradle-daemon-jvm.properties`); Gradl
       tag `experiment-4x4-torus`, preset `presets/tiny-torus-4x4.properties`).
 - [x] Entity copies: the client draws every entity (and you) at each alias in render distance.
       Visual only; needs the mod on the client. You can shoot yourself in the back with an arrow.
-- [x] Config: `config/seamless_planet.properties` (shape, size, blend). Global, not per world yet.
+- [x] Config: `config/seamless_world_wrap.properties` (shape, size, blend). Global, not per world yet.
 
 ## Known issues
 

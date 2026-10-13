@@ -12,7 +12,7 @@
     "environment": "*",
     "entrypoints": {
         "main": [
-            "com.andrewparry.seamlessplanet.SeamlessPlanetFabric"
+            "com.andrewparry.seamlessworldwrap.SeamlessWorldWrapFabric"
         ]
     },
     "mixins": [
