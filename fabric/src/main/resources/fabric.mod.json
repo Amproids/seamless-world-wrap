@@ -8,6 +8,10 @@
         "${mod_author}"
     ],
     "license": "${license}",
+    "contact": {
+        "sources": "https://github.com/Amproids/seamless-world-wrap",
+        "issues": "https://github.com/Amproids/seamless-world-wrap/issues"
+    },
     "icon": "${mod_id}.png",
     "environment": "*",
     "entrypoints": {
