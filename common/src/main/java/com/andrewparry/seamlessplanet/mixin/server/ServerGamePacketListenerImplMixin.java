@@ -5,7 +5,11 @@ import com.andrewparry.seamlessplanet.mixin.packet.ServerboundMovePlayerPacketAc
 import com.andrewparry.seamlessplanet.mixin.packet.ServerboundPlayerActionPacketAccessor;
 import com.andrewparry.seamlessplanet.mixin.packet.ServerboundSignUpdatePacketAccessor;
 import com.andrewparry.seamlessplanet.mixin.packet.ServerboundUseItemOnPacketAccessor;
+import com.andrewparry.seamlessplanet.wrap.SeamListener;
 import com.andrewparry.seamlessplanet.wrap.SeamPlayer;
+import com.andrewparry.seamlessplanet.wrap.SeamShifter;
+import com.andrewparry.seamlessplanet.mixin.packet.ServerboundMoveVehiclePacketAccessor;
+import net.minecraft.network.protocol.game.ServerboundMoveVehiclePacket;
 import com.andrewparry.seamlessplanet.wrap.SeamWrap;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
@@ -30,7 +34,7 @@ import java.util.Set;
  * client: its coordinates stay continuous and only the player's offset changes.
  */
 @Mixin(ServerGamePacketListenerImpl.class)
-public abstract class ServerGamePacketListenerImplMixin {
+public abstract class ServerGamePacketListenerImplMixin implements SeamListener {
 
     @Shadow
     public ServerPlayer player;
@@ -49,6 +53,18 @@ public abstract class ServerGamePacketListenerImplMixin {
 
     @Shadow
     private Vec3 awaitingPositionFromClient;
+
+    @Shadow
+    private double vehicleFirstGoodX;
+
+    @Shadow
+    private double vehicleFirstGoodZ;
+
+    @Shadow
+    private double vehicleLastGoodX;
+
+    @Shadow
+    private double vehicleLastGoodZ;
 
     private static final String ENSURE_THREAD =
             "Lnet/minecraft/network/protocol/PacketUtils;ensureRunningOnSameThread(Lnet/minecraft/network/protocol/Packet;Lnet/minecraft/network/PacketListener;Lnet/minecraft/server/level/ServerLevel;)V";
@@ -139,31 +155,42 @@ public abstract class ServerGamePacketListenerImplMixin {
         seamless$canonicalizePlayer();
     }
 
-    /** If the player is past a seam, shift them (and everything that remembers their position) back. */
+    /** If the player (or the vehicle they ride) is past a seam, shift it back without telling the client. */
     private void seamless$canonicalizePlayer() {
         WrapSettings wrap = SeamWrap.of(player.level());
-        if (wrap == null) {
-            return;
+        if (wrap != null) {
+            SeamShifter.shiftIntoRange(player.getRootVehicle(), wrap);
         }
-        int shiftX = (int) Math.floor(player.getX() / wrap.width()) * wrap.width();
-        int shiftZ = wrap.shape().wrapsZ() ? (int) Math.floor(player.getZ() / wrap.height()) * wrap.height() : 0;
-        if (shiftX == 0 && shiftZ == 0) {
-            return;
-        }
-        player.setPos(player.getX() - shiftX, player.getY(), player.getZ() - shiftZ);
-        player.xo -= shiftX;
-        player.xOld -= shiftX;
-        player.zo -= shiftZ;
-        player.zOld -= shiftZ;
-        firstGoodX -= shiftX;
-        lastGoodX -= shiftX;
-        firstGoodZ -= shiftZ;
-        lastGoodZ -= shiftZ;
+    }
+
+    @Override
+    public void seamless$shiftRemembered(int dx, int dz) {
+        firstGoodX -= dx;
+        lastGoodX -= dx;
+        firstGoodZ -= dz;
+        lastGoodZ -= dz;
+        vehicleFirstGoodX -= dx;
+        vehicleLastGoodX -= dx;
+        vehicleFirstGoodZ -= dz;
+        vehicleLastGoodZ -= dz;
         if (awaitingPositionFromClient != null) {
-            awaitingPositionFromClient = awaitingPositionFromClient.add(-shiftX, 0, -shiftZ);
+            awaitingPositionFromClient = awaitingPositionFromClient.add(-dx, 0, -dz);
         }
-        SeamPlayer seam = (SeamPlayer) player;
-        seam.seamless$setOffset(seam.seamless$offsetX() + shiftX, seam.seamless$offsetZ() + shiftZ);
-        player.serverLevel().getChunkSource().move(player);
+    }
+
+    /** Boats and other client-driven vehicles report their position in the client's frame too. */
+    @Inject(method = "handleMoveVehicle", at = @At(value = "INVOKE", target = ENSURE_THREAD, shift = At.Shift.AFTER))
+    private void seamless$vehicleFromClientFrame(ServerboundMoveVehiclePacket packet, CallbackInfo ci) {
+        if (SeamWrap.of(player.level()) != null) {
+            SeamPlayer seam = (SeamPlayer) player;
+            ServerboundMoveVehiclePacketAccessor access = (ServerboundMoveVehiclePacketAccessor) packet;
+            access.seamless$setX(packet.getX() - seam.seamless$offsetX());
+            access.seamless$setZ(packet.getZ() - seam.seamless$offsetZ());
+        }
+    }
+
+    @Inject(method = "handleMoveVehicle", at = @At("TAIL"))
+    private void seamless$canonicalizeAfterVehicleMove(ServerboundMoveVehiclePacket packet, CallbackInfo ci) {
+        seamless$canonicalizePlayer();
     }
 }
