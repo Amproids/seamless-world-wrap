@@ -1,0 +1,20 @@
+name: Feature request
+description: Suggest an idea or a mod to be compatible with
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like?
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why?
+      description: What would you do with it? What problem does it solve?
+  - type: input
+    id: mod
+    attributes:
+      label: Other mod involved (for compatibility requests)
+      placeholder: Distant Horizons, Sodium, Terralith, ...

@@ -1,0 +1,69 @@
+name: Bug report
+description: Something doesn't work, or the game crashes
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for the report! The more of this you fill in, the faster it can be fixed.
+  - type: input
+    id: version
+    attributes:
+      label: Mod version
+      description: Shown in the jar name or the mods list.
+      placeholder: 0.1.0-alpha
+    validations:
+      required: true
+  - type: dropdown
+    id: loader
+    attributes:
+      label: Loader
+      options:
+        - Fabric
+        - NeoForge
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where does it happen?
+      options:
+        - Singleplayer
+        - Dedicated server
+        - LAN
+    validations:
+      required: true
+  - type: input
+    id: world
+    attributes:
+      label: World size and wrapping
+      description: From the World Wrap tab, or `<world>/seamless_world_wrap.json`.
+      placeholder: 64 x 64 chunks, east-west and north-south
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you expected, and what happened instead. Screenshots or videos help a lot.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Create a 16 x 16 world
+        2. Walk east across the edge
+        3. ...
+  - type: textarea
+    id: mods
+    attributes:
+      label: Other mods installed
+      description: A list or a modpack name. Write "none" if it's just this mod (and Fabric API).
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Log or crash report
+      description: Upload `logs/latest.log` (or the file in `crash-reports/`) to https://mclo.gs and paste the link here.
