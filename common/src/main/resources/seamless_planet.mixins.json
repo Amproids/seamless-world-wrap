@@ -12,6 +12,7 @@
     "server.EntityMixin",
     "server.LevelMixin",
     "server.LevelTicksMixin",
+    "server.MinecraftServerMixin",
     "server.PlayerChunkSenderMixin",
     "server.ServerChunkCacheMixin",
     "server.ServerCommonPacketListenerImplMixin",
