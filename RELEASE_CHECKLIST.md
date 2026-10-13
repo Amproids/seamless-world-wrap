@@ -1,7 +1,7 @@
 # Release checklist: Seamless World Wrap 0.1.0-alpha
 
 ## Testing (Claude runs the game, Andrew plays)
-- [ ] **NeoForge launches** and a wrapped world loads (World Wrap tab, crossing an edge, portal room)
+- [x] **NeoForge launches** and a wrapped world loads (World Wrap tab, crossing an edge, portal room)
 - [ ] **Big world** (64 x 64 chunks): cross an edge; no missing chunks or reloading where you land
 - [ ] **Multiplayer**: local server, two players see each other across an edge; settings reach the client
 - [ ] **Unmodded client** joins the wrapped server and can walk across an edge (no copies/smooth crossing expected)
