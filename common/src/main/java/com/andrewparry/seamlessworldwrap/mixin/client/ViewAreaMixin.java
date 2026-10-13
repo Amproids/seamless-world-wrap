@@ -86,10 +86,17 @@ public abstract class ViewAreaMixin {
         sections = moved;
     }
 
-    /** Like setOrigin, but keeps the built mesh (the blocks there are the same). */
+    /**
+     * Like setOrigin, but keeps the built mesh (the blocks there are the same). A rebuild queued for
+     * the old position was prepared with the old neighborhood, so cancel it (as setOrigin does) and
+     * rebuild at the new position instead.
+     */
     @Unique
     private static void seamless$move(SectionRenderDispatcher.RenderSection section, int dx, int dz) {
         RenderSectionAccessor access = (RenderSectionAccessor) section;
+        if (access.seamless$cancelTasks()) {
+            section.setDirty(false);
+        }
         BlockPos.MutableBlockPos origin = access.seamless$origin();
         origin.set(origin.getX() + dx, origin.getY(), origin.getZ() + dz);
         access.seamless$setBoundingBox(new AABB(origin.getX(), origin.getY(), origin.getZ(),
