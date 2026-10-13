@@ -28,10 +28,14 @@ public class WorldWrapTab extends GridLayoutTab {
     private static final int[] SIZES = {1, 2, 4, 8, 16, 32, 48, 64, 96, 128, 192, 256, 384, 512, 1024, 2048};
 
     private final List<AbstractWidget> endCustomWidgets = new ArrayList<>();
+    private final WorldWrapDraft draft = WorldWrapDraft.current();
+    private CycleButton<Boolean> endEastWest;
+    private CycleButton<Boolean> endNorthSouth;
+    private SizeSlider endWidth;
+    private SizeSlider endLength;
 
     public WorldWrapTab() {
         super(Component.translatable("seamless_world_wrap.tab.title"));
-        WorldWrapDraft draft = WorldWrapDraft.current();
         Font font = Minecraft.getInstance().font;
         GridLayout.RowHelper rows = layout.columnSpacing(10).rowSpacing(4).createRowHelper(2);
 
@@ -42,37 +46,49 @@ public class WorldWrapTab extends GridLayoutTab {
         rows.addChild(new StringWidget(Component.translatable("seamless_world_wrap.end"), font));
 
         // Row: east-west | End mode
-        rows.addChild(toggle("seamless_world_wrap.east_west", draft.overworld.wrapsX, v -> draft.overworld.wrapsX = v));
+        rows.addChild(toggle("seamless_world_wrap.east_west", draft.overworld.wrapsX, v -> {
+            draft.overworld.wrapsX = v;
+            followOverworld();
+        }));
         rows.addChild(CycleButton.<WorldWrapDraft.EndMode>builder(WorldWrapDraft.EndMode::label)
                 .withValues(WorldWrapDraft.EndMode.values())
                 .withInitialValue(draft.endMode)
                 .create(0, 0, WIDGET_WIDTH, 20, Component.translatable("seamless_world_wrap.end_mode"), (button, mode) -> {
                     draft.endMode = mode;
-                    updateEndWidgets(draft);
+                    updateEndWidgets();
                 }));
 
         // Row: north-south | End east-west
-        rows.addChild(toggle("seamless_world_wrap.north_south", draft.overworld.wrapsZ, v -> draft.overworld.wrapsZ = v));
-        rows.addChild(endWidget(toggle("seamless_world_wrap.east_west", draft.end.wrapsX, v -> draft.end.wrapsX = v)));
+        rows.addChild(toggle("seamless_world_wrap.north_south", draft.overworld.wrapsZ, v -> {
+            draft.overworld.wrapsZ = v;
+            followOverworld();
+        }));
+        endEastWest = rows.addChild(endWidget(toggle("seamless_world_wrap.east_west", draft.end.wrapsX, v -> draft.end.wrapsX = v)));
 
         // Row: width | End north-south
-        rows.addChild(new SizeSlider("seamless_world_wrap.width", draft.overworld.widthChunks, v -> draft.overworld.widthChunks = v));
-        rows.addChild(endWidget(toggle("seamless_world_wrap.north_south", draft.end.wrapsZ, v -> draft.end.wrapsZ = v)));
+        rows.addChild(new SizeSlider("seamless_world_wrap.width", draft.overworld.widthChunks, v -> {
+            draft.overworld.widthChunks = v;
+            followOverworld();
+        }));
+        endNorthSouth = rows.addChild(endWidget(toggle("seamless_world_wrap.north_south", draft.end.wrapsZ, v -> draft.end.wrapsZ = v)));
 
         // Row: length | End width
-        rows.addChild(new SizeSlider("seamless_world_wrap.length", draft.overworld.lengthChunks, v -> draft.overworld.lengthChunks = v));
-        rows.addChild(endWidget(new SizeSlider("seamless_world_wrap.width", draft.end.widthChunks, v -> draft.end.widthChunks = v)));
+        rows.addChild(new SizeSlider("seamless_world_wrap.length", draft.overworld.lengthChunks, v -> {
+            draft.overworld.lengthChunks = v;
+            followOverworld();
+        }));
+        endWidth = rows.addChild(endWidget(new SizeSlider("seamless_world_wrap.width", draft.end.widthChunks, v -> draft.end.widthChunks = v)));
 
         // Row: start in a forest | End length
         rows.addChild(toggle("seamless_world_wrap.start_in_forest", draft.startInForest, v -> draft.startInForest = v));
-        rows.addChild(endWidget(new SizeSlider("seamless_world_wrap.length", draft.end.lengthChunks, v -> draft.end.lengthChunks = v)));
+        endLength = rows.addChild(endWidget(new SizeSlider("seamless_world_wrap.length", draft.end.lengthChunks, v -> draft.end.lengthChunks = v)));
 
         MultiLineTextWidget note = new MultiLineTextWidget(Component.translatable("seamless_world_wrap.note"), font);
         note.setMaxWidth(WIDGET_WIDTH * 2 + 10);
         note.setCentered(true);
         rows.addChild(note, 2);
 
-        updateEndWidgets(draft);
+        updateEndWidgets();
     }
 
     private static CycleButton<Boolean> toggle(String key, boolean initial, java.util.function.Consumer<Boolean> onChange) {
@@ -80,17 +96,33 @@ public class WorldWrapTab extends GridLayoutTab {
                 .create(0, 0, WIDGET_WIDTH, 20, Component.translatable(key), (button, value) -> onChange.accept(value));
     }
 
-    private AbstractWidget endWidget(AbstractWidget widget) {
+    private <W extends AbstractWidget> W endWidget(W widget) {
         endCustomWidgets.add(widget);
         return widget;
     }
 
-    /** End settings only matter (and can only be changed) when the End has its own settings. */
-    private void updateEndWidgets(WorldWrapDraft draft) {
+    /** End settings can only be changed when the End has its own settings; otherwise they mirror the Overworld. */
+    private void updateEndWidgets() {
         boolean custom = draft.endMode == WorldWrapDraft.EndMode.CUSTOM;
         for (AbstractWidget widget : endCustomWidgets) {
             widget.active = custom;
         }
+        followOverworld();
+    }
+
+    /** While the End is "Same as Overworld", show (and keep) the Overworld's values in its controls. */
+    private void followOverworld() {
+        if (draft.endMode != WorldWrapDraft.EndMode.SAME || endEastWest == null || endLength == null) {
+            return;
+        }
+        draft.end.wrapsX = draft.overworld.wrapsX;
+        draft.end.wrapsZ = draft.overworld.wrapsZ;
+        draft.end.widthChunks = draft.overworld.widthChunks;
+        draft.end.lengthChunks = draft.overworld.lengthChunks;
+        endEastWest.setValue(draft.end.wrapsX);
+        endNorthSouth.setValue(draft.end.wrapsZ);
+        endWidth.setChunks(draft.end.widthChunks);
+        endLength.setChunks(draft.end.lengthChunks);
     }
 
     /** A slider that snaps to the offered world sizes, in chunks. */
@@ -112,6 +144,11 @@ public class WorldWrapTab extends GridLayoutTab {
                 }
             }
             return SIZES.length - 1;
+        }
+
+        void setChunks(int chunks) {
+            value = indexOf(chunks) / (double) (SIZES.length - 1);
+            updateMessage();
         }
 
         private int chunks() {
