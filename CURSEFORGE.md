@@ -47,7 +47,7 @@ The BisectHosting affiliate link (CurseForge partner program, project 1743155) i
 
 | Field | Fabric file | NeoForge file |
 |---|---|---|
-| File | `release/seamless_world_wrap-fabric-1.21.1-0.1.0-alpha.jar` | `release/seamless_world_wrap-neoforge-1.21.1-0.1.0-alpha.jar` |
+| File | `release/seamless_world_wrap-fabric-1.21.1-0.1.0.jar` | `release/seamless_world_wrap-neoforge-1.21.1-0.1.0.jar` |
 | Display name | Seamless World Wrap 0.1.0 (Fabric 1.21.1) | Seamless World Wrap 0.1.0 (NeoForge 1.21.1) |
 | Release type | Release | Release |
 | Mod loader | Fabric | NeoForge |
