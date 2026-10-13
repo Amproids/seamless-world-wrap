@@ -44,7 +44,9 @@
     "packet.ServerboundSignUpdatePacketAccessor",
     "packet.ServerboundUseItemOnPacketAccessor"
   ],
-  "client": [],
+  "client": [
+    "client.LevelRendererMixin"
+  ],
   "server": [],
   "injectors": {
     "defaultRequire": 1
