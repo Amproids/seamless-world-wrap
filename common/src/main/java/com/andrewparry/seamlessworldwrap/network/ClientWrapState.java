@@ -28,9 +28,28 @@ public final class ClientWrapState {
         dimensions = Map.copyOf(payload.dimensions());
     }
 
+    /** Total seam jumps the camera has made (negated), so clouds can ignore them. */
+    private static double cloudShiftX;
+    private static double cloudShiftZ;
+
     public static void clear() {
         dimensions = Map.of();
         current = null;
+        cloudShiftX = 0;
+        cloudShiftZ = 0;
+    }
+
+    public static void addSeamJump(double dx, double dz) {
+        cloudShiftX -= dx;
+        cloudShiftZ -= dz;
+    }
+
+    public static double cloudShiftX() {
+        return cloudShiftX;
+    }
+
+    public static double cloudShiftZ() {
+        return cloudShiftZ;
     }
 
     @Nullable

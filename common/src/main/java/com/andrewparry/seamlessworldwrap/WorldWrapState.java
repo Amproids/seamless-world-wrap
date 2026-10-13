@@ -38,6 +38,11 @@ public final class WorldWrapState {
         return active.get(dimension);
     }
 
+    /** True while the running server has any wrapped dimension. */
+    public static boolean anyWrap() {
+        return !active.isEmpty();
+    }
+
     public static WorldWrapOptions options() {
         return options;
     }

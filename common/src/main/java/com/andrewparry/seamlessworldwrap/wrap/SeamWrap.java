@@ -62,6 +62,21 @@ public final class SeamWrap {
         return wx == pos.x && wz == pos.z ? pos : new ChunkPos(wx, wz);
     }
 
+    /** The eight one-world-size shifts {dx, dz} to neighboring copies (fewer if an axis doesn't wrap). */
+    public static java.util.List<int[]> aliasShifts(WrapSettings wrap) {
+        int[] xs = wrap.wrapsX() ? new int[]{0, wrap.width(), -wrap.width()} : new int[]{0};
+        int[] zs = wrap.wrapsZ() ? new int[]{0, wrap.height(), -wrap.height()} : new int[]{0};
+        java.util.List<int[]> out = new java.util.ArrayList<>();
+        for (int dx : xs) {
+            for (int dz : zs) {
+                if (dx != 0 || dz != 0) {
+                    out.add(new int[]{dx, dz});
+                }
+            }
+        }
+        return out;
+    }
+
     /** Block shift (a multiple of the width) that moves x to its alias nearest {@code nearX}. */
     public static int shiftX(WrapSettings wrap, double x, double nearX) {
         return wrap.wrapsX() ? (int) Math.round((nearX - x) / wrap.width()) * wrap.width() : 0;

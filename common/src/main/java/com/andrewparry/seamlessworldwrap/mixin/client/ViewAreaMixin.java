@@ -3,7 +3,12 @@ package com.andrewparry.seamlessworldwrap.mixin.client;
 import com.andrewparry.seamlessworldwrap.WrapSettings;
 import com.andrewparry.seamlessworldwrap.client.ClientEntityShift;
 import com.andrewparry.seamlessworldwrap.network.ClientWrapState;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.particle.Particle;
 import net.minecraft.client.renderer.ViewArea;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import java.util.List;
+import java.util.Queue;
 import net.minecraft.client.renderer.chunk.SectionRenderDispatcher;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -82,8 +87,43 @@ public abstract class ViewAreaMixin {
         }
         for (SectionRenderDispatcher.RenderSection section : moved) {
             seamless$move(section, dx, dz);
+            seamless$swapBlockEntities(section, dx, dz);
         }
         sections = moved;
+        seamless$moveParticles(dx, dz);
+        ClientWrapState.addSeamJump(dx, dz);
+    }
+
+    /**
+     * Bells, chests, signs and the like are drawn by block entity renderers at their own position.
+     * A moved section still lists the ones from its old position; swap in the ones at the new
+     * position (same blocks, so they exist), which the client already has from preloading.
+     */
+    @Unique
+    private void seamless$swapBlockEntities(SectionRenderDispatcher.RenderSection section, int dx, int dz) {
+        List<BlockEntity> list = section.getCompiled().getRenderableBlockEntities();
+        for (int i = 0; i < list.size(); i++) {
+            BlockEntity replacement = level.getBlockEntity(list.get(i).getBlockPos().offset(dx, 0, dz));
+            if (replacement != null) {
+                list.set(i, replacement);
+            }
+        }
+    }
+
+    /** Torch flames, smoke and other particles move with the jump instead of hanging back. */
+    @Unique
+    private static void seamless$moveParticles(int dx, int dz) {
+        Minecraft minecraft = Minecraft.getInstance();
+        for (Queue<Particle> queue : ((ParticleEngineAccessor) minecraft.particleEngine).seamless$particles().values()) {
+            for (Particle particle : queue) {
+                ParticleAccessor p = (ParticleAccessor) particle;
+                double xo = p.seamless$xo() + dx;
+                double zo = p.seamless$zo() + dz;
+                particle.setPos(p.seamless$x() + dx, p.seamless$y(), p.seamless$z() + dz);
+                p.seamless$setXo(xo);
+                p.seamless$setZo(zo);
+            }
+        }
     }
 
     /**
