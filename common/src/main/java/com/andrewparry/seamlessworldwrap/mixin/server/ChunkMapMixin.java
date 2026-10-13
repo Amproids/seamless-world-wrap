@@ -12,6 +12,10 @@ import net.minecraft.world.level.levelgen.NoiseGeneratorSettings;
 import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.levelgen.synth.NormalNoise;
 import net.minecraft.server.level.PlayerMap;
+import net.minecraft.server.level.ChunkTrackingView;
+import net.minecraft.network.protocol.game.ClientboundSetChunkCacheCenterPacket;
+import com.andrewparry.seamlessworldwrap.wrap.SeamTrackingView;
+import java.util.function.Consumer;
 import net.minecraft.world.level.chunk.LevelChunk;
 import com.andrewparry.seamlessworldwrap.wrap.SeamAliases;
 import com.andrewparry.seamlessworldwrap.wrap.SeamChunkSender;
@@ -120,6 +124,30 @@ public abstract class ChunkMapMixin {
             SeamAliases.forEachInView(wrap, player.getChunkTrackingView(), pos.x, pos.z,
                     (ax, az) -> sender.seamless$markAlias(ChunkPos.asLong(ax, az)));
         }
+    }
+
+    /** In a wrapped level the view also covers the landing spots across nearby seams (preloading). */
+    @Redirect(method = "updateChunkTracking",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ChunkTrackingView;of(Lnet/minecraft/world/level/ChunkPos;I)Lnet/minecraft/server/level/ChunkTrackingView;"))
+    private ChunkTrackingView seamless$viewWithLandingSpots(ChunkPos center, int viewDistance) {
+        WrapSettings wrap = SeamWrap.of(level);
+        return wrap == null ? ChunkTrackingView.of(center, viewDistance) : SeamTrackingView.of(wrap, center, viewDistance);
+    }
+
+    /** Vanilla only knows how to diff (and announce the center of) its own circular views. */
+    @Redirect(method = "applyChunkTrackingView",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ChunkTrackingView;difference(Lnet/minecraft/server/level/ChunkTrackingView;Lnet/minecraft/server/level/ChunkTrackingView;Ljava/util/function/Consumer;Ljava/util/function/Consumer;)V"))
+    private void seamless$diffViews(ChunkTrackingView oldView, ChunkTrackingView newView, Consumer<ChunkPos> send, Consumer<ChunkPos> drop,
+                                    ServerPlayer player, ChunkTrackingView appliedView) {
+        if (!(oldView instanceof SeamTrackingView) && !(newView instanceof SeamTrackingView)) {
+            ChunkTrackingView.difference(oldView, newView, send, drop);
+            return;
+        }
+        ChunkPos center = SeamTrackingView.centerOf(newView);
+        if (newView instanceof SeamTrackingView && center != null && !center.equals(SeamTrackingView.centerOf(oldView))) {
+            player.connection.send(new ClientboundSetChunkCacheCenterPacket(center.x, center.z));
+        }
+        SeamTrackingView.difference(oldView, newView, send, drop);
     }
 
     @Redirect(method = "updateChunkTracking",

@@ -1,15 +1,20 @@
 package com.andrewparry.seamlessworldwrap.wrap;
 
 import com.andrewparry.seamlessworldwrap.WrapSettings;
+import net.minecraft.network.protocol.game.ClientboundMoveVehiclePacket;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.RelativeMovement;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
+
+import java.util.EnumSet;
 
 /**
  * Moves an entity that has wandered past a seam back into the canonical range. Runs between
  * ticks, never in the middle of one, so code that works out a move over several steps (minecart
  * rails, pathfinding, collisions) always sees continuous coordinates. Passengers move with their
- * vehicle; players also have their client offset adjusted so their client sees no jump.
+ * vehicle. Players are teleported by exactly one world size (relative, so speed and facing are
+ * kept); the chunks around where they land were already sent (SeamTrackingView).
  */
 public final class SeamShifter {
 
@@ -28,6 +33,14 @@ public final class SeamShifter {
     }
 
     private static void shift(Entity entity, int sx, int sz) {
+        if (entity instanceof ServerPlayer player && player.connection != null) {
+            player.connection.teleport(player.getX() - sx, player.getY(), player.getZ() - sz,
+                    player.getYRot(), player.getXRot(), EnumSet.allOf(RelativeMovement.class));
+            for (Entity passenger : entity.getPassengers()) {
+                shift(passenger, sx, sz);
+            }
+            return;
+        }
         entity.setPos(entity.getX() - sx, entity.getY(), entity.getZ() - sz);
         entity.xo -= sx;
         entity.xOld -= sx;
@@ -40,18 +53,12 @@ public final class SeamShifter {
                 mob.getMoveControl().setWantedPosition(mob.getX(), mob.getY(), mob.getZ(), 0.0);
             }
         }
-        if (entity instanceof ServerPlayer player) {
-            SeamPlayer seam = (SeamPlayer) player;
-            seam.seamless$setOffset(seam.seamless$offsetX() + sx, seam.seamless$offsetZ() + sz);
-            if (player.connection != null) {
-                ((SeamListener) player.connection).seamless$shiftRemembered(sx, sz);
-            }
-        }
         for (Entity passenger : entity.getPassengers()) {
             shift(passenger, sx, sz);
         }
-        if (entity instanceof ServerPlayer player) {
-            player.serverLevel().getChunkSource().move(player);
+        // A vehicle the client drives (boat, horse) is positioned by that client: tell it the new spot.
+        if (entity.getControllingPassenger() instanceof ServerPlayer driver && driver.connection != null) {
+            driver.connection.send(new ClientboundMoveVehiclePacket(entity));
         }
     }
 }

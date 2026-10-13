@@ -16,6 +16,7 @@
     "server.MinecraftServerMixin",
     "server.PersistentEntitySectionManagerAccessor",
     "server.PlayerChunkSenderMixin",
+    "server.PlayerReachMixin",
     "server.ServerChunkCacheMixin",
     "server.ServerCommonPacketListenerImplMixin",
     "server.ServerGamePacketListenerImplMixin",
@@ -48,9 +49,15 @@
     "packet.ServerboundUseItemOnPacketAccessor"
   ],
   "client": [
+    "client.AbstractMinecartLerpAccessor",
+    "client.BoatLerpAccessor",
+    "client.ClientChunkCacheMixin",
+    "client.ClientChunkStorageAccessor",
+    "client.ClientLevelMixin",
     "client.ClientPacketListenerMixin",
     "client.CreateWorldScreenMixin",
-    "client.LevelRendererMixin"
+    "client.LevelRendererMixin",
+    "client.LivingEntityLerpAccessor"
   ],
   "server": [],
   "injectors": {

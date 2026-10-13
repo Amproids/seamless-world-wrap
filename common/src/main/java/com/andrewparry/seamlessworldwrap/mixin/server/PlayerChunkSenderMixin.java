@@ -3,6 +3,7 @@ package com.andrewparry.seamlessworldwrap.mixin.server;
 import com.andrewparry.seamlessworldwrap.WrapSettings;
 import com.andrewparry.seamlessworldwrap.wrap.SeamChunkSender;
 import com.andrewparry.seamlessworldwrap.wrap.SeamPacketTranslator;
+import com.andrewparry.seamlessworldwrap.wrap.SeamTrackingView;
 import com.andrewparry.seamlessworldwrap.wrap.SeamWrap;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.network.protocol.game.ClientboundChunkBatchFinishedPacket;
@@ -10,7 +11,6 @@ import net.minecraft.network.protocol.game.ClientboundChunkBatchStartPacket;
 import net.minecraft.network.protocol.game.ClientboundForgetLevelChunkPacket;
 import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
 import net.minecraft.server.level.ChunkMap;
-import net.minecraft.server.level.ChunkTrackingView;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.PlayerChunkSender;
@@ -96,8 +96,8 @@ public abstract class PlayerChunkSenderMixin implements SeamChunkSender {
 
         ServerLevel level = player.serverLevel();
         ChunkMap chunkMap = level.getChunkSource().chunkMap;
-        ChunkPos center = player.getChunkTrackingView() instanceof ChunkTrackingView.Positioned positioned
-                ? positioned.center() : player.chunkPosition();
+        ChunkPos viewCenter = SeamTrackingView.centerOf(player.getChunkTrackingView());
+        ChunkPos center = viewCenter != null ? viewCenter : player.chunkPosition();
         List<Long> order = new ArrayList<>(pendingChunks);
         order.sort(Comparator.comparingInt(pos -> center.distanceSquared(pos)));
         int limit = memoryConnection ? order.size() : Mth.floor(batchQuota);

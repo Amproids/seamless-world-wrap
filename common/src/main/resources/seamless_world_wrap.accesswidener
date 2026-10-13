@@ -1,0 +1,4 @@
+accessWidener v2 named
+# Client chunk storage: keep chunks preloaded across seams (ClientChunkCacheMixin).
+accessible class net/minecraft/client/multiplayer/ClientChunkCache$Storage
+accessible field net/minecraft/client/multiplayer/ClientChunkCache storage Lnet/minecraft/client/multiplayer/ClientChunkCache$Storage;

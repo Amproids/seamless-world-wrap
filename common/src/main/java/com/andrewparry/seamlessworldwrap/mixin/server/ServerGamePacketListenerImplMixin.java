@@ -29,9 +29,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.Set;
 
 /**
- * Converts the client's (continuous, unwrapped) coordinates to canonical ones on the way in, and
- * moves the player back into the canonical range after they cross a seam, without telling the
- * client: its coordinates stay continuous and only the player's offset changes.
+ * After a player crosses a seam they're teleported by one world size back into the canonical range
+ * (see SeamShifter). The client-frame offset translations below are kept for safety but the offset
+ * is always 0 now: client coordinates are canonical.
  */
 @Mixin(ServerGamePacketListenerImpl.class)
 public abstract class ServerGamePacketListenerImplMixin implements SeamListener {
@@ -119,31 +119,15 @@ public abstract class ServerGamePacketListenerImplMixin implements SeamListener 
         }
     }
 
-    /**
-     * Absolute teleports land on the canonical position, with the offset chosen so the client ends
-     * up at the alias nearest where it was. Relative teleports keep the offset; the player is
-     * canonicalized afterwards like after any other move.
-     */
+    /** Absolute teleports (e.g. /tp) land on the canonical position of their target. */
     @Inject(method = "teleport(DDDFFLjava/util/Set;)V", at = @At("HEAD"), cancellable = true)
     private void seamless$teleportCanonical(double x, double y, double z, float yaw, float pitch, Set<RelativeMovement> relative, CallbackInfo ci) {
         WrapSettings wrap = SeamWrap.of(player.level());
         if (wrap == null) {
             return;
         }
-        SeamPlayer seam = (SeamPlayer) player;
         double cx = relative.contains(RelativeMovement.X) ? x : wrap.wrapX(x);
         double cz = relative.contains(RelativeMovement.Z) ? z : wrap.wrapZ(z);
-        int offsetX = seam.seamless$offsetX();
-        int offsetZ = seam.seamless$offsetZ();
-        if (!relative.contains(RelativeMovement.X) && wrap.wrapsX()) {
-            double clientX = player.getX() + offsetX;
-            offsetX = (int) Math.round((clientX - cx) / wrap.width()) * wrap.width();
-        }
-        if (!relative.contains(RelativeMovement.Z) && wrap.wrapsZ()) {
-            double clientZ = player.getZ() + offsetZ;
-            offsetZ = (int) Math.round((clientZ - cz) / wrap.height()) * wrap.height();
-        }
-        seam.seamless$setOffset(offsetX, offsetZ);
         if (cx != x || cz != z) {
             ci.cancel();
             ((ServerGamePacketListenerImpl) (Object) this).teleport(cx, y, cz, yaw, pitch, relative);
