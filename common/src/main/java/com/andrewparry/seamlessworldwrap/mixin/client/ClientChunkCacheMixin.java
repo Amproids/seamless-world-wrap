@@ -1,5 +1,6 @@
 package com.andrewparry.seamlessworldwrap.mixin.client;
 
+import com.andrewparry.seamlessworldwrap.SeamlessWorldWrap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import net.minecraft.client.multiplayer.ClientChunkCache;
@@ -62,6 +63,7 @@ public abstract class ClientChunkCacheMixin {
             }
         }
         chunk.replaceWithPacketData(buffer, tag, consumer);
+        seamless$farReceived++;
         cir.setReturnValue(chunk);
     }
 
@@ -91,11 +93,17 @@ public abstract class ClientChunkCacheMixin {
         }
     }
 
+    @Unique
+    private int seamless$farReceived;
+
     /** When the view center moves (e.g. after a seam teleport), swap chunks between the two stores. */
     @Inject(method = "updateViewCenter", at = @At("TAIL"))
     private void seamless$rebalance(int centerX, int centerZ, CallbackInfo ci) {
         ClientChunkStorageAccessor main = seamless$storage();
         AtomicReferenceArray<LevelChunk> slots = main.seamless$chunks();
+        int demoted = 0;
+        int promoted = 0;
+        int blocked = 0;
         synchronized (seamless$far) {
             // Main-store chunks now out of range would be lost; keep them.
             for (int i = 0; i < slots.length(); i++) {
@@ -104,6 +112,7 @@ public abstract class ClientChunkCacheMixin {
                         && slots.compareAndSet(i, chunk, null)) {
                     main.seamless$setChunkCount(main.seamless$chunkCount() - 1);
                     seamless$far.put(chunk.getPos().toLong(), chunk);
+                    demoted++;
                 }
             }
             // Far chunks now in range move into the main store.
@@ -117,8 +126,15 @@ public abstract class ClientChunkCacheMixin {
                         main.seamless$setChunkCount(main.seamless$chunkCount() + 1);
                         it.remove();
                         level.onChunkLoaded(pos);
+                        promoted++;
+                    } else {
+                        blocked++;
                     }
                 }
+            }
+            if (promoted > 0 || demoted > 0 || blocked > 0) {
+                SeamlessWorldWrap.LOG.info("[preload debug] center {},{}: promoted {} far chunks, demoted {}, blocked {}; far store {}, received {} far chunks so far",
+                        centerX, centerZ, promoted, demoted, blocked, seamless$far.size(), seamless$farReceived);
             }
         }
     }

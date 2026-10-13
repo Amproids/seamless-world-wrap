@@ -1,6 +1,7 @@
 package com.andrewparry.seamlessworldwrap.mixin.server;
 
 import com.andrewparry.seamlessworldwrap.WorldWrapState;
+import com.andrewparry.seamlessworldwrap.SeamlessWorldWrap;
 import com.andrewparry.seamlessworldwrap.WrapSettings;
 import com.andrewparry.seamlessworldwrap.wrap.SeamPlayer;
 import com.andrewparry.seamlessworldwrap.wrap.SeamWrap;
@@ -146,11 +147,25 @@ public abstract class ChunkMapMixin {
             ChunkTrackingView.difference(oldView, newView, send, drop);
             return;
         }
+        if (oldView.equals(newView)) {
+            return; // same view (e.g. the player only moved up or down): nothing to send or drop
+        }
         ChunkPos center = SeamTrackingView.centerOf(newView);
         if (newView instanceof SeamTrackingView && center != null && !center.equals(SeamTrackingView.centerOf(oldView))) {
             player.connection.send(new ClientboundSetChunkCacheCenterPacket(center.x, center.z));
         }
-        SeamTrackingView.difference(oldView, newView, send, drop);
+        int[] counts = new int[2];
+        SeamTrackingView.difference(oldView, newView, pos -> {
+            counts[0]++;
+            send.accept(pos);
+        }, pos -> {
+            counts[1]++;
+            drop.accept(pos);
+        });
+        if (newView instanceof SeamTrackingView seam && (counts[0] > 0 || counts[1] > 0) && (seam.regions().size() > 1 || counts[1] > 50)) {
+            SeamlessWorldWrap.LOG.info("[preload debug] {} view centers {}: +{} chunks, -{} chunks",
+                    player.getGameProfile().getName(), seam.regions(), counts[0], counts[1]);
+        }
     }
 
     @Redirect(method = "updateChunkTracking",
