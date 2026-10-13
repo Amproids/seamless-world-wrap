@@ -5,11 +5,14 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.CycleButton;
+import net.minecraft.client.gui.components.ImageWidget;
 import net.minecraft.client.gui.components.MultiLineTextWidget;
 import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.components.tabs.GridLayoutTab;
 import net.minecraft.client.gui.layouts.GridLayout;
+import com.andrewparry.seamlessworldwrap.SeamlessWorldWrap;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 
 import java.util.ArrayList;
@@ -20,6 +23,7 @@ import java.util.function.IntConsumer;
 public class WorldWrapTab extends GridLayoutTab {
 
     private static final int WIDGET_WIDTH = 150;
+    private static final ResourceLocation ICON = SeamlessWorldWrap.id("textures/gui/icon.png");
     /** World sizes offered, in chunks. */
     private static final int[] SIZES = {1, 2, 4, 8, 16, 32, 48, 64, 96, 128, 192, 256, 384, 512, 1024, 2048};
 
@@ -29,7 +33,10 @@ public class WorldWrapTab extends GridLayoutTab {
         super(Component.translatable("seamless_world_wrap.tab.title"));
         WorldWrapDraft draft = WorldWrapDraft.current();
         Font font = Minecraft.getInstance().font;
-        GridLayout.RowHelper rows = layout.columnSpacing(10).rowSpacing(6).createRowHelper(2);
+        GridLayout.RowHelper rows = layout.columnSpacing(10).rowSpacing(4).createRowHelper(2);
+
+        // Pixel-art icon, drawn at its native 32 px so it stays crisp.
+        rows.addChild(ImageWidget.texture(32, 32, ICON, 32, 32), 2, rows.newCellSettings().alignHorizontallyCenter());
 
         rows.addChild(new StringWidget(Component.translatable("seamless_world_wrap.overworld"), font));
         rows.addChild(new StringWidget(Component.translatable("seamless_world_wrap.end"), font));
