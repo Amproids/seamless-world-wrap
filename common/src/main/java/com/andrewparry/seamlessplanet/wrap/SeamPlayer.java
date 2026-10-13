@@ -12,7 +12,4 @@ public interface SeamPlayer {
     int seamless$offsetZ();
 
     void seamless$setOffset(int x, int z);
-
-    /** Where this player's client last placed each entity (x, z), so entity updates stay continuous. */
-    it.unimi.dsi.fastutil.ints.Int2ObjectMap<double[]> seamless$entityClientPos();
 }

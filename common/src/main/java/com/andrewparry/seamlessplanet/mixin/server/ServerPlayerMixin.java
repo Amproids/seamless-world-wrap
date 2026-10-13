@@ -1,8 +1,6 @@
 package com.andrewparry.seamlessplanet.mixin.server;
 
 import com.andrewparry.seamlessplanet.wrap.SeamPlayer;
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import org.spongepowered.asm.mixin.Mixin;
@@ -19,14 +17,6 @@ public abstract class ServerPlayerMixin implements SeamPlayer {
 
     @Unique
     private int seamless$offsetZ;
-
-    @Unique
-    private final Int2ObjectMap<double[]> seamless$entityClientPos = new Int2ObjectOpenHashMap<>();
-
-    @Override
-    public Int2ObjectMap<double[]> seamless$entityClientPos() {
-        return seamless$entityClientPos;
-    }
 
     @Override
     public int seamless$offsetX() {
@@ -48,6 +38,5 @@ public abstract class ServerPlayerMixin implements SeamPlayer {
     @Inject(method = "setServerLevel", at = @At("HEAD"))
     private void seamless$resetOffset(ServerLevel level, CallbackInfo ci) {
         seamless$setOffset(0, 0);
-        seamless$entityClientPos.clear();
     }
 }
